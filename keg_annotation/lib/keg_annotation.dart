@@ -1,8 +1,8 @@
-/// Support for doing something awesome.
-///
-/// More dartdocs go here.
+/// Defines annotations for the Keg generator.
 library;
 
-export 'src/keg_annotation_base.dart';
+import 'package:keg_annotation/src/annotations.dart';
 
-// TODO: Export any libraries intended for clients of this package.
+export 'src/annotations.dart';
+
+const ignore = Ignore();
