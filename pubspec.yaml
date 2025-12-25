@@ -1,0 +1,10 @@
+name: keg_ws # Can be anything
+environment:
+  sdk: ">= 3.10.4 <4.0.0"
+publish_to: none
+#dev_dependencies:
+#  dart_flutter_team_lints: ^3.1.0
+
+workspace:
+  - keg_annotation
+  - keg_generator
