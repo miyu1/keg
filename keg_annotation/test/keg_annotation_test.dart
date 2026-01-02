@@ -28,6 +28,6 @@ class Class2 {
   String name = 'example';
 }
 
-@Database(tables: [Class1, Class2])
+@KegDb(tables: [Class1, Class2])
 class Class3 {
 }

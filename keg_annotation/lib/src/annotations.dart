@@ -1,11 +1,11 @@
 import 'package:meta/meta_meta.dart';
 
 @Target({TargetKind.classType})
-class Database {
+class KegDatabase {
   final List<Type> tables;
   final int schemaVersion;
 
-  const Database({required this.tables, this.schemaVersion = 1});
+  const KegDatabase({required this.tables, this.schemaVersion = 1});
 }
 
 @Target({TargetKind.classType})

@@ -4,14 +4,25 @@ version: 0.1.0
 # repository: https://github.com/my_org/my_repo
 
 resolution: workspace
+publish_to: none
 
 environment:
   sdk: ">= 3.10.4 <4.0.0"
 
 # Add regular dependencies here.
 dependencies:
+  analyzer: ^9.0.0
+  build: ^4.0.3
+  source_gen: ^4.1.1
   # path: ^1.9.0
+
+  keg_annotation:
+    path: ../keg_annotation
 
 dev_dependencies:
   lints: 
   test:
+  build_test: ^3.5.4
+  path: ^1.9.1
+  sqflite: ^2.4.2
+  sqflite_common_ffi: ^2.4.0+1

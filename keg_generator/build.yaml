@@ -1,0 +1,23 @@
+# targets section is for test
+targets:
+  $default:
+    builders:
+#      source_gen|combining_builder:
+#        options:
+#          build_extensions:
+#            {"test/data/{{}}.dart": ["test/data/generated/{{}}.g.dart"]}  
+      keg_generator|keg_generator:
+        generate_for:
+          include:
+            - test/**.dart
+
+# builders section is for the package itself
+builders:
+  keg_generator:
+    import: "package:keg_generator/keg_generator.dart"
+    builder_factories: ["kegBuilder"]
+    build_extensions: {".dart": ["keg.g.part"]}
+    auto_apply: dependents
+#    build_to: source
+    build_to: cache
+    applies_builders: ["source_gen|combining_builder"]

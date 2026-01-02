@@ -3,6 +3,15 @@
 /// More dartdocs go here.
 library;
 
-export 'src/keg_generator_base.dart';
+import 'package:build/build.dart';
+import 'package:source_gen/source_gen.dart';
 
-// TODO: Export any libraries intended for clients of this package.
+import 'src/database_generator.dart';
+import 'src/table_generator.dart';
+
+
+export 'src/database_generator.dart';
+export 'src/table_generator.dart';
+
+Builder kegBuilder(BuilderOptions _) =>
+    SharedPartBuilder([DatabaseGenerator(), TableGenerator()], "keg");
