@@ -237,8 +237,8 @@ class _$UserHelper {
   final String tableName = 'user';
   final column = (id: 'id', name: 'name');
   final columnTypes = {
-    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
-    'name': 'TEXT NOT NULL DEFAULT ""',
+    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
+    'name': "TEXT NOT NULL DEFAULT ''",
   };
   static final v1ColumnList = ['id', 'name'];
   final columnListByVersion = {1: v1ColumnList};
@@ -407,13 +407,13 @@ class _$ItemInfoHelper {
     created: 'created',
   );
   final columnTypes = {
-    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
-    'name': 'TEXT NOT NULL DEFAULT ""',
-    'stock': 'INTEGER NOT NULL DEFAULT 0',
-    'color': 'TEXT NOT NULL DEFAULT "${Color.values[0].name}"',
-    'weight': 'REAL NOT NULL DEFAULT 0.0',
-    'is_active': 'INTEGER NOT NULL DEFAULT 0',
-    'created': 'INTEGER NOT NULL DEFAULT 0',
+    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
+    'name': "TEXT NOT NULL DEFAULT ''",
+    'stock': "INTEGER NOT NULL DEFAULT 0",
+    'color': "TEXT NOT NULL DEFAULT '${Color.values[0].name}'",
+    'weight': "REAL NOT NULL DEFAULT 0.0",
+    'is_active': "INTEGER NOT NULL DEFAULT 0",
+    'created': "INTEGER NOT NULL DEFAULT 0",
   };
   static final v1ColumnList = [
     'id',

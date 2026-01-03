@@ -190,4 +190,66 @@ void main() async {
     final result2 = await appdb.queryUser();
     expect(result2.length, 0);
   });
+
+  test('query User', () async {
+    final user1 = User('John');
+    final user2 = User('Mike');
+    final user3 = User('Jack');
+
+    await appdb.registerUser(user1);
+    await appdb.registerUser(user2);
+    await appdb.registerUser(user3);
+
+    final result = await appdb.queryUser(orderBy: '${appdb.userHelper.column.name} asc');
+    expect(result.length, 3);
+    expect(result[0].name, 'Jack');
+    expect(result[1].name, 'John');
+    expect(result[2].name, 'Mike');
+
+    final result2 = await appdb.queryUser(
+      where: "${appdb.userHelper.column.name} LIKE 'J%'",
+      orderBy: '${appdb.userHelper.column.name} desc'
+    );
+    expect(result2.length, 2);
+    expect(result2[0].name, 'John');
+    expect(result2[1].name, 'Jack');
+
+    final result3 = await appdb.queryUser(
+      where: "${appdb.userHelper.column.name} = ?",
+      whereArgs: ['Mike'],
+    );
+    expect(result3.length, 1);
+    expect(result3[0].name, 'Mike');
+
+    await appdb.deleteUser(user1);
+    await appdb.deleteUser(user2);
+    await appdb.deleteUser(user3);
+  });
+
+  test('insert/delete item', () async {
+    final item1 = ItemInfo('pen', weight: 8.5, color: .red,
+      stock: 10, isActive: true, id: 10);
+
+    await appdb.registerItemInfo(item1);
+    final result1 = await appdb.queryItemInfo();
+
+    expect(result1.length, 1);
+    expect(result1[0].id, 10);
+
+    final item2 = ItemInfo('blue pen', weight: 12.5, color: .blue,
+      stock: 30, isActive: false, id: 10);
+    await appdb.registerItemInfo(item2);
+    final result2 = await appdb.queryItemInfo();
+
+    expect(result2.length, 1);
+    expect(result2[0].id, item2.id);
+    expect(result2[0].name, item2.name);
+    expect(result2[0].weight, item2.weight);
+    expect(result2[0].color, item2.color);
+    expect(result2[0].stock, item2.stock);
+    expect(result2[0].isActive, item2.isActive);
+    expect(result2[0].created, item2.created);
+
+    await appdb.deleteItemInfo(item2);
+  });
 }
