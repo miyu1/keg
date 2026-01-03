@@ -112,15 +112,15 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         dbTypeStr += switch (field.type) {
           DataType.dtInteger => ' DEFAULT 0',
           DataType.dtDouble => ' DEFAULT 0.0',
-          DataType.dtString => ' DEFAULT ""',
+          DataType.dtString => " DEFAULT ''",
           DataType.dtBool => ' DEFAULT 0',
           DataType.dtDateTime => ' DEFAULT 0',
-          DataType.dtEnum => ' DEFAULT "\${${field.className}.values[0].name}"',
+          DataType.dtEnum => " DEFAULT '\${${field.className}.values[0].name}'",
           _ => '',
         };
 
       }
-      columnTypes += "'${field.columnName}':'$dbTypeStr', ";
+      columnTypes += '\'${field.columnName}\':"$dbTypeStr", ';
     }
     columnRecord += ')';
     columnList += ']';
