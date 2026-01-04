@@ -23,7 +23,7 @@ enum Color {
 
 @Table()
 class ItemInfo {
-  //static final v1ColumnList = ['id', 'name', 'weight'];
+  static final v1ColumnList = ['id', 'name', 'weight'];
 
   int id;
   String name;

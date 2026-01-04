@@ -413,16 +413,9 @@ class _$ItemInfoHelper {
     'is_active': "INTEGER NOT NULL DEFAULT 0",
     'created': "INTEGER NOT NULL DEFAULT 0",
   };
-  static final v2ColumnList = [
-    'id',
-    'name',
-    'stock',
-    'color',
-    'weight',
-    'is_active',
-    'created',
-  ];
-  final columnListByVersion = {2: v2ColumnList};
+  static final v1ColumnList = ['id', 'name', 'weight'];
+  static final v2ColumnList = ['stock', 'color', 'is_active', 'created'];
+  final columnListByVersion = {1: v1ColumnList, 2: v2ColumnList};
 
   /// on create database table
   Future<void> onCreate(
