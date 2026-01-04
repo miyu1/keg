@@ -78,7 +78,7 @@ void main() async {
     }
   });
 
-  test('after migration1', () async {
+  test('after migration2', () async {
     await appdb.open();
 
     expect(appdb.schemaVersion, 2);

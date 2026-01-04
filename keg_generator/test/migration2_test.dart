@@ -17,11 +17,11 @@ void main() {
     await f.delete();
   });
 
-  test('before migration1', () async {
+  test('before migration2', () async {
     await testGenerator('migration2_before');
   });
 
-  test('after migration1', () async {
+  test('after migration2', () async {
     File file = File('test/migration2_after.g.dart');
     if (file.existsSync()) {
       file.deleteSync();
