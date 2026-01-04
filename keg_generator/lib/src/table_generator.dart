@@ -1,10 +1,12 @@
+import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'package:keg_annotation/keg_annotation.dart';
 
-enum DataType {
+enum _DataType {
   dtUnknown(dartType: ''),
   dtInteger(dartType: 'int'),
   dtDouble(dartType: 'double'),
@@ -13,7 +15,7 @@ enum DataType {
   dtDateTime(dartType: 'DateTime'),
   dtEnum(dartType: '');
 
-  const DataType({required this.dartType});
+  const _DataType({required this.dartType});
 
   final String dartType;
 }
@@ -27,7 +29,7 @@ enum ConstructType {
 class _FieldInfo {
   String name = '';
   String columnName = '';
-  DataType type = .dtUnknown;
+  _DataType type = .dtUnknown;
   String className = ''; // for enum class
   String defaultValue = '';
   //bool isRequired = false;
@@ -39,6 +41,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
   final Map<String, _FieldInfo> _fieldMap = {};
   final List<String> _requiredPositional = [];
   final List<String> _optionalPositional = [];
+  final Map<String, List<String>> _columnMap = {};
 
   @override
   Future<String> generateForAnnotatedElement(
@@ -54,6 +57,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     _fieldMap.clear();
     _requiredPositional.clear();
     _optionalPositional.clear(); 
+    _columnMap.clear();
 
     final className = element.displayName;
     final tableName = toSnakeCase(className);
@@ -64,6 +68,21 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       return '// $className is not included in any database.';
     }
 
+    final oldColumnList = <String>[];
+    if (schemaVersion > 1) {
+      final library = await buildStep.inputLibrary;
+      final helperElement = library.getClass('_\$${className}Helper');
+      if (helperElement != null) {
+        await _analyzeStaticFields(helperElement, schemaVersion, buildStep);
+      }
+      await _analyzeStaticFields(element, schemaVersion, buildStep);
+
+      for(var version = 1; version < schemaVersion; version++) {
+        final key = 'v${version}ColumnList';
+        oldColumnList.addAll(_columnMap[key] ?? []);
+      }
+    }
+
     await _analyzeFields(element);
 
     // helper fields
@@ -72,7 +91,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       throw InvalidGenerationSourceError(msg);
     }
     final idInfo = _fieldMap['id']!;
-    if (idInfo.type != DataType.dtInteger) {
+    if (idInfo.type != _DataType.dtInteger) {
       final msg = 'field "id" in class $className must be of type int';
       throw InvalidGenerationSourceError(msg);
     }
@@ -82,21 +101,23 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     var columnTypes = '{'; // map
 
     for (final field in _fieldMap.values) {
-      if (field.type == DataType.dtUnknown) {
+      if (field.type == _DataType.dtUnknown) {
         final msg =
             'field ${field.name} in class ${element.name} has undetermined type';
         throw InvalidGenerationSourceError(msg);
       }
       columnRecord += "${field.name}:'${field.columnName}', ";
-      columnList += "'${field.columnName}', ";
+      if (!oldColumnList.contains(field.columnName)) {
+        columnList += "'${field.columnName}', ";
+      }
 
       var dbTypeStr = switch (field.type) {
-        DataType.dtInteger => 'INTEGER',
-        DataType.dtDouble => 'REAL',
-        DataType.dtString => 'TEXT',
-        DataType.dtBool => 'INTEGER',
-        DataType.dtDateTime => 'INTEGER',
-        DataType.dtEnum => 'TEXT',
+        _DataType.dtInteger => 'INTEGER',
+        _DataType.dtDouble => 'REAL',
+        _DataType.dtString => 'TEXT',
+        _DataType.dtBool => 'INTEGER',
+        _DataType.dtDateTime => 'INTEGER',
+        _DataType.dtEnum => 'TEXT',
         _ => '',
       };
       if (dbTypeStr.isEmpty) {
@@ -110,12 +131,12 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       } else {
         dbTypeStr += ' NOT NULL';
         dbTypeStr += switch (field.type) {
-          DataType.dtInteger => ' DEFAULT 0',
-          DataType.dtDouble => ' DEFAULT 0.0',
-          DataType.dtString => " DEFAULT ''",
-          DataType.dtBool => ' DEFAULT 0',
-          DataType.dtDateTime => ' DEFAULT 0',
-          DataType.dtEnum => " DEFAULT '\${${field.className}.values[0].name}'",
+          _DataType.dtInteger => ' DEFAULT 0',
+          _DataType.dtDouble => ' DEFAULT 0.0',
+          _DataType.dtString => " DEFAULT ''",
+          _DataType.dtBool => ' DEFAULT 0',
+          _DataType.dtDateTime => ' DEFAULT 0',
+          _DataType.dtEnum => " DEFAULT '\${${field.className}.values[0].name}'",
           _ => '',
         };
 
@@ -130,10 +151,24 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       'class _\$${className}Helper {',
       '  final String tableName = \'$tableName\';',
       '  final column = $columnRecord;',
-      '  final columnTypes = $columnTypes;',
+      '  final columnTypes = $columnTypes;',];
+
+    var columnListByVersion = '';
+    for(var version = 1; version < schemaVersion; version++) {
+      final key = 'v${version}ColumnList';
+      if (_columnMap.containsKey(key)) {
+        final value = _columnMap[key]?.map((e) => "'$e'",).join(', '); 
+        lines.add('  static final $key = [$value];');
+        columnListByVersion += '$version: $key, ';
+      }
+    }
+    columnListByVersion += '$schemaVersion: v${schemaVersion}ColumnList';
+
+    lines.addAll([
       '  static final v${schemaVersion}ColumnList = $columnList;',
-      '  final columnListByVersion = {1: v1ColumnList};',
-      '', ];
+      //'  final columnListByVersion = {1: v1ColumnList};',
+      '  final columnListByVersion = {$columnListByVersion};',
+      '',]);
 
     lines.addAll(_generateTableCreators(className));
     lines.addAll(_generateMapConverters(className));
@@ -218,11 +253,11 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     for (final field in _fieldMap.values) {
       var valueStr = 'item.${field.name}';
-      if (field.type == DataType.dtBool) {
+      if (field.type == _DataType.dtBool) {
         valueStr = 'item.${field.name} ? 1 : 0';
-      } else if (field.type == DataType.dtDateTime) {
+      } else if (field.type == _DataType.dtDateTime) {
         valueStr = 'item.${field.name}.toUtc().microsecondsSinceEpoch';
-      } else if (field.type == DataType.dtEnum) {
+      } else if (field.type == _DataType.dtEnum) {
         valueStr = 'item.${field.name}.name';
       }
 
@@ -394,20 +429,20 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       fieldInfo.name = field.displayName;
       fieldInfo.columnName = toSnakeCase(fieldInfo.name);
 
-      var type = DataType.dtUnknown;
+      var type = _DataType.dtUnknown;
       final typeName = field.type.getDisplayString();
       if (field.type.isDartCoreInt) {
-        type = DataType.dtInteger;
+        type = _DataType.dtInteger;
       } else if (field.type.isDartCoreDouble) {
-        type = DataType.dtDouble;
+        type = _DataType.dtDouble;
       } else if (field.type.isDartCoreString) {
-        type = DataType.dtString;
+        type = _DataType.dtString;
       } else if (field.type.isDartCoreBool) {
-        type = DataType.dtBool;
+        type = _DataType.dtBool;
       } else if (field.type.element?.library?.displayName == 'dart.core' && typeName == 'DateTime') {
-        type = DataType.dtDateTime;
+        type = _DataType.dtDateTime;
       } else if (field.type.element is EnumElement) {
-        type = DataType.dtEnum;
+        type = _DataType.dtEnum;
         fieldInfo.className = typeName;
       } else {
         final msg =
@@ -475,6 +510,33 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     }
   }
 
+  Future<void> _analyzeStaticFields(
+    ClassElement element,
+    int schemaVersion,
+    BuildStep buildStep,
+  ) async {
+    for(final field in element.fields) {
+      if(!field.isStatic) {
+        continue;
+      }
+      if (!field.displayName.endsWith('ColumnList')) {
+        continue;
+      }
+
+      final astNode = await buildStep.resolver.astNodeFor(field.firstFragment);
+      if (astNode == null) {
+        continue;
+      }
+      //print(astNode.childEntities.length);
+      final visitor = _StringListVisitor();
+      astNode.visitChildren(visitor);
+
+      if (visitor.isList) {
+        _columnMap[field.displayName] = visitor.values;
+      }
+    }
+  }
+
   /// get schemaVersion from KegDb annotation
   Future<int> _getSchemaVersion(String className, BuildStep buildStep) async {
     // find KegDb annotation
@@ -519,5 +581,25 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     return input
         .replaceAllMapped(regex, (Match m) => '_${m.group(0)}')
         .toLowerCase();
+  }
+}
+
+class _StringListVisitor extends GeneralizingAstVisitor {
+  bool isList = false;
+  List<String> values = [];
+
+  @override
+  visitListLiteral(ListLiteral node) {
+    isList = true;
+    return super.visitListLiteral(node);
+  }
+
+  @override
+  visitSimpleStringLiteral(SimpleStringLiteral node) {
+    // print('string literal: ${node.literal} ${node.value}');
+    if (isList) {
+      values.add(node.value);
+    }
+    return super.visitSimpleStringLiteral(node);
   }
 }
