@@ -11,7 +11,7 @@ void main() {
 
   tearDownAll(() async {
     final dir = await getDatabasesPath();
-    final path = p.join(dir, 'app.db');
+    final path = p.join(dir, 'migration1.db');
     print('deleting file: $path');
     final f = File(path);
     await f.delete();
@@ -21,7 +21,7 @@ void main() {
     await testGenerator('migration1_before');
   });
 
-  test('after migration1', () async {
+  test('after migration1. read previous g.dart to check table change', () async {
     final file = File('test/migration1_before.g.dart');
     final content = file.readAsStringSync();
     final lines = content.split('\n');

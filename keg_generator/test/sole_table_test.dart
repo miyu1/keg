@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:keg_annotation/keg_annotation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 part 'sole_table_test.g.dart';
@@ -48,38 +47,12 @@ class ItemInfo {
       _$ItemInfoHelper.fromSqlMap(map);
 }
 
-/*
-@Table()
-class ItemInfo2 {
-  int id;
-  String name;
-  int stock;
-  Color color;
-  double weight;
-  bool isActive;
-  DateTime created = DateTime.now();
-
-  ItemInfo2(
-    this.name, {
-    required this.weight,
-    required this.color,
-    required this.stock,
-    required this.isActive,
-    this.id = 0,
-  });
-
-  Map<String, Object?> toSqlMap() => _$ItemInfo2Helper.toSqlMap(this);
-  factory ItemInfo2.fromSqlMap(Map<String, Object?> map) =>
-      _$ItemInfo2Helper.fromSqlMap(map);
-}
-*/
-
 @KegDatabase(tables: [User, ItemInfo])
 class AppDatabase extends _$AppDatabase {
   @override
   Future<String> getPathToOpen() async {
     // Implement your logic to get the database path
-    return 'app.db';
+    return 'sole.db';
   }
 }
 
@@ -104,8 +77,7 @@ void main() async {
       await appdb.close();
     }
 
-    final dir = await getDatabasesPath();
-    final path = p.join(dir, 'app.db');
+    final path = appdb.path;
     print('deleting file: $path');
     final f = File(path);
     await f.delete();
@@ -184,11 +156,19 @@ void main() async {
     expect(user2.id, user1.id);
     expect(user2.name, user1.name);
 
+    final user3 = await appdb.getUser(id);
+    expect(user3, isNotNull);
+    expect(user3?.id, id);
+    expect(user3?.name, user1.name);
+
     final count = await appdb.deleteUser(user1);
     expect(count, 1);
 
     final result2 = await appdb.queryUser();
     expect(result2.length, 0);
+
+    final user4 = await appdb.getUser(id);
+    expect(user4, isNull);
   });
 
   test('query User', () async {

@@ -62,7 +62,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     final className = element.displayName;
     final tableName = toSnakeCase(className);
 
-    int schemaVersion = await _getSchemaVersion(className, buildStep);
+    int schemaVersion = 0;
+    String appDbName = '';
+    (schemaVersion, appDbName) = await _getSchemaVersion(className, buildStep);
     if (schemaVersion == 0) {
       log.warning('class $className is not included in any database.');
       return '// $className is not included in any database.';
@@ -172,7 +174,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     lines.addAll(_generateTableCreators(className));
     lines.addAll(_generateMapConverters(className));
-    lines.addAll(_generateDataHandlers(className));
+    lines.addAll(_generateDataHandlers(className, appDbName));
 
     lines.add('}'); // end of class 
 
@@ -364,42 +366,113 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
   List<String> _generateDataHandlers(
     String className,
+    String appDbName
   ) {
+    final batch = '_\$${appDbName}BatchWrapper?';
+
     var lines = <String>[
-      'Future<int> register($className item , {DatabaseExecutor? db, Batch? batch}) async {',
+      'Future<int> register($className item , {DatabaseExecutor? db, $batch batch}) async {',
+      '  assert((db != null) ^ (batch != null));',
+      '',
       '  final map = item.toSqlMap();',
       "  var command = 'REPLACE INTO';",
       '  if (item.id == 0) {',
       "    command = 'INSERT INTO';",
       '  }',
       "final sql = '\$command \$tableName (\${map.keys.join(',')}) VALUES (\${List.filled(map.length, '?').join(', ')})';",
-      "print('register sql: \$sql');",
-      "print('args: \${map.values.toList()}');",
-      'var id = 0;',
+      "// print('register sql: \$sql');",
+      "// print('args: \${map.values.toList()}');",
+      '',
       'if (db != null) {',
-      '  id = await db.rawInsert(sql, map.values.toList());',
+      '  final id = await db.rawInsert(sql, map.values.toList());',
       '  item.id = id;',
+      '  return id;',
       '} else if (batch != null) {',
-      '  batch.rawInsert(sql, map.values.toList());',
+      '  batch.rawInsert(sql, map.values.toList(), (noResult, object) {',
+      '    if (item.id == 0) {',
+      '      if (noResult != true && object is int) {',
+      '        item.id = object;',
+      '      }',
+      // '      if (noResult == true || object is! int) {',
+      // "        throw StateError('returned object \$object is not int.');",
+      // '      }',
+      // '      item.id = object;',
+      '    }',
+      '    return object;',
+      '  });'
       '}',
-      'return id;',
+      'return -1;',
       '}',
       '',
       'Future<List<$className>> query({String? where, List<Object?>? whereArgs, ',
       '  String? orderBy, int? limit, int? offset,',
-      '  DatabaseExecutor? db, Batch? batch}) async {',
+      '  DatabaseExecutor? db, $batch batch}) async {',
+      '  assert((db != null) ^ (batch != null));',
+      '',
       'if (db != null) {',
       "  final result = await db.query(tableName, where: where, whereArgs: whereArgs, ",
       '     orderBy: orderBy, limit: limit, offset: offset);',
-      '  return result.map((entry) => $className.fromSqlMap(entry)).toList();'
+      '  return result.map((entry) => $className.fromSqlMap(entry)).toList();',
+      '} else if (batch != null) {',
+      '  batch.query(tableName, where: where, whereArgs: whereArgs,',
+      '  orderBy: orderBy, limit: limit, offset: offset,',
+      '  onCommit: (noResult, object) {',
+      '    if(noResult == true || object is! List<Map<String, Object?>>) {',
+      "      throw StateError('returned object \$object is not expected type.');",
+      '    }',
+      '    final result = object.map((entry) => $className.fromSqlMap(entry)).toList();',
+      '',
+      '    return result;',
+      '  },',
+      ');',
       '}',
-      '  return [];'  
+      '  return [];',  
       '}',
       '',
-      'Future<int> delete($className item , {DatabaseExecutor? db, Batch? batch}) async {',
+      'Future<$className?> get(int id, {DatabaseExecutor? db, $batch batch}) async {',
+      '  assert((db != null) ^ (batch != null));',
+      '',
+      '  if (db != null) {',
+      '    final result = await query(',
+      "       where: '\${column.id} = ?',",
+      '       whereArgs: [id],',
+      '       db: db);',
+      '',
+      '    if (result.isEmpty) {',
+      '      return null;',
+      '    }',
+      '',
+      '    assert(result.length == 1);',
+      '    return result[0];',
+      '} else if (batch != null) {',
+      "  batch.query(tableName, where: '\${column.id} = ?', whereArgs: [id],",
+      '    onCommit: (noResult, object) {',
+      '    if(noResult == true || object is! List<Map<String, Object?>>) {',
+      "      throw StateError('returned object \$object is not expected type.');",
+      '    }',
+      '    final result = object.map((entry) => $className.fromSqlMap(entry)).toList();',
+      '    if (result.isEmpty) {',
+      '       return null;',
+      '    }'
+      '',
+      '    assert(result.length == 1);',
+      '',
+      '    return result[0];',
+      '    },',
+      ' );',
+      '}',
+      'return null;',
+      '}',
+      '',
+      'Future<int> delete($className item , {DatabaseExecutor? db, $batch batch}) async {',
+      '  assert((db != null) ^ (batch != null));',
+      '  assert(item.id != 0);',
+      '',
       ' if (db != null) {',
       "    final id = await db.delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);",
       '    return id;'
+      ' } else if (batch != null) {',
+      "    batch.delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);"
       ' }',
       ' return -1;'
       '}',
@@ -538,13 +611,14 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
   }
 
   /// get schemaVersion from KegDb annotation
-  Future<int> _getSchemaVersion(String className, BuildStep buildStep) async {
+  Future<(int, String)> _getSchemaVersion(String className, BuildStep buildStep) async {
     // find KegDb annotation
     final library = await buildStep.inputLibrary;
     final libraryReader = LibraryReader(library);
     final checker = TypeChecker.typeNamed(KegDatabase);
     final annotatedElements = libraryReader.annotatedWith(checker);
 
+    var appdb = '';
     int version = 0;
     for(final annotatedElement in annotatedElements){
       final appDbElement = annotatedElement.element;
@@ -565,14 +639,17 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       if (tmpVersion == null) {
         continue;
       }
-      if (version != 0 && version != tmpVersion) {
-        final msg = 'class $className is included in multiple database and different schema version';
+      // if (version != 0 &&  version != tmpVersion) {
+      if (version != 0) {
+        //final msg = 'class $className is included in multiple database and different schema version';
+        final msg = 'class $className is included in multiple database($appdb and ${appDbElement.displayName})';
         throw InvalidGenerationSourceError(msg);
       }
+      appdb = appDbElement.displayName;
       version = tmpVersion;
     }
 
-    return version;
+    return (version, appdb);
   }
 
   /// Converts a CamelCase string to snake_case.

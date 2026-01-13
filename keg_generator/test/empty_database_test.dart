@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:keg_annotation/keg_annotation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 part 'empty_database_test.g.dart';
@@ -11,7 +10,7 @@ class AppDatabase extends _$AppDatabase {
   @override
   Future<String> getPathToOpen() async {
     // Implement your logic to get the database path
-    return 'app.db';
+    return 'empty.db';
   }
 }
 void main() async {
@@ -33,12 +32,10 @@ void main() async {
   tearDownAll(() async {
     await appdb.close();
     
-    final dir = await getDatabasesPath();
-    final path = p.join(dir, 'app.db');
+    final path = appdb.path;
     print('file path: $path');
     final f = File(path);
     await f.delete();
-
   });
 
   test('check empty database', () async {
@@ -55,6 +52,6 @@ void main() async {
     // print(result);
     expect(result.length, 1);
     version = result[0]['user_version'];
-    expect(version, 1); // no table yet, so version is 0
+    expect(version, 1); 
   });
 }

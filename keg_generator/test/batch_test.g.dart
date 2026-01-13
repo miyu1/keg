@@ -1,4 +1,6 @@
-part of 'migration2_after.dart';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'batch_test.dart';
 
 // **************************************************************************
 // DatabaseGenerator
@@ -42,30 +44,6 @@ class _$AppDatabaseTransactionWrapper implements Transaction {
 
   Future<int> deleteUser(User item) =>
       appdb.userHelper.delete(item, db: transaction);
-
-  Future<int> registerItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.register(item, db: transaction);
-
-  Future<List<ItemInfo>> queryItemInfo({
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-  }) => appdb.itemInfoHelper.query(
-    where: where,
-    whereArgs: whereArgs,
-    orderBy: orderBy,
-    limit: limit,
-    offset: offset,
-    db: transaction,
-  );
-
-  Future<ItemInfo?> getItemInfo(int id) =>
-      appdb.itemInfoHelper.get(id, db: transaction);
-
-  Future<int> deleteItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.delete(item, db: transaction);
 
   // passthrough methods
   @override
@@ -268,29 +246,6 @@ class _$AppDatabaseBatchWrapper implements Batch {
 
   void deleteUser(User item) => appdb.userHelper.delete(item, batch: this);
 
-  void registerItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.register(item, batch: this);
-
-  void queryItemInfo({
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-  }) => appdb.itemInfoHelper.query(
-    where: where,
-    whereArgs: whereArgs,
-    orderBy: orderBy,
-    limit: limit,
-    offset: offset,
-    batch: this,
-  );
-
-  void getItemInfo(int id) => appdb.itemInfoHelper.get(id, batch: this);
-
-  void deleteItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.delete(item, batch: this);
-
   // pass through methods
   @override
   int get length => batch.length;
@@ -450,13 +405,12 @@ class _$AppDatabaseBatchWrapper implements Batch {
 }
 
 abstract class _$AppDatabase implements DatabaseExecutor {
-  int get schemaVersion => 2;
+  int get schemaVersion => 1;
 
   @override
   late Database database;
 
   late final userHelper = _$UserHelper();
-  late final itemInfoHelper = _$ItemInfoHelper();
 
   Future<String> getPathToOpen();
 
@@ -480,14 +434,12 @@ abstract class _$AppDatabase implements DatabaseExecutor {
   Future<void> onCreate(Database db, int version) async {
     final batch = db.batch();
     await userHelper.onCreate(version, batch: batch);
-    await itemInfoHelper.onCreate(version, batch: batch);
     await batch.commit();
   }
 
   Future<void> onUpgrade(Database db, int oldVersion, int newVersion) async {
     final batch = db.batch();
     await userHelper.onUpgrade(oldVersion, newVersion, batch: batch);
-    await itemInfoHelper.onUpgrade(oldVersion, newVersion, batch: batch);
     await batch.commit();
   }
 
@@ -524,33 +476,6 @@ abstract class _$AppDatabase implements DatabaseExecutor {
   Future<User?> getUser(int id) => userHelper.get(id, db: database);
 
   Future<int> deleteUser(User item) => userHelper.delete(item, db: database);
-
-  /// Insert or update ItemInfo.
-  /// If id is 0, insert and sets id to generated value.
-  /// If specified id already exists in table, update the record.
-  /// If specified id does not exist in table, insert with the id.
-  Future<int> registerItemInfo(ItemInfo item) =>
-      itemInfoHelper.register(item, db: database);
-
-  Future<List<ItemInfo>> queryItemInfo({
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-  }) => itemInfoHelper.query(
-    where: where,
-    whereArgs: whereArgs,
-    orderBy: orderBy,
-    limit: limit,
-    offset: offset,
-    db: database,
-  );
-
-  Future<ItemInfo?> getItemInfo(int id) => itemInfoHelper.get(id, db: database);
-
-  Future<int> deleteItemInfo(ItemInfo item) =>
-      itemInfoHelper.delete(item, db: database);
 
   Future<T> transaction<T>(
     Future<T> Function(_$AppDatabaseTransactionWrapper txn) action, {
@@ -710,8 +635,8 @@ class _$UserHelper {
     'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
     'name': "TEXT NOT NULL DEFAULT ''",
   };
-  static final v2ColumnList = ['id', 'name'];
-  final columnListByVersion = {2: v2ColumnList};
+  static final v1ColumnList = ['id', 'name'];
+  final columnListByVersion = {1: v1ColumnList};
 
   /// on create database table
   Future<void> onCreate(
@@ -929,319 +854,6 @@ class _$UserHelper {
 
   Future<int> delete(
     User item, {
-    DatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-    assert(item.id != 0);
-
-    if (db != null) {
-      final id = await db.delete(
-        tableName,
-        where: '${column.id} = ?',
-        whereArgs: [item.id],
-      );
-      return id;
-    } else if (batch != null) {
-      batch.delete(tableName, where: '${column.id} = ?', whereArgs: [item.id]);
-    }
-    return -1;
-  }
-}
-
-class _$ItemInfoHelper {
-  final String tableName = 'item_info';
-  final column = (
-    id: 'id',
-    name: 'name',
-    stock: 'stock',
-    color: 'color',
-    weight: 'weight',
-    isActive: 'is_active',
-    created: 'created',
-  );
-  final columnTypes = {
-    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
-    'name': "TEXT NOT NULL DEFAULT ''",
-    'stock': "INTEGER NOT NULL DEFAULT 0",
-    'color': "TEXT NOT NULL DEFAULT '${Color.values[0].name}'",
-    'weight': "REAL NOT NULL DEFAULT 0.0",
-    'is_active': "INTEGER NOT NULL DEFAULT 0",
-    'created': "INTEGER NOT NULL DEFAULT 0",
-  };
-  static final v1ColumnList = ['id', 'name', 'weight'];
-  static final v2ColumnList = ['stock', 'color', 'is_active', 'created'];
-  final columnListByVersion = {1: v1ColumnList, 2: v2ColumnList};
-
-  /// on create database table
-  Future<void> onCreate(
-    int version, {
-    DatabaseExecutor? db,
-    Batch? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-
-    var columnList = [];
-    for (var i = 1; i <= version; i++) {
-      final oneColumnList = columnListByVersion[i] ?? [];
-      columnList.addAll(oneColumnList);
-    }
-    if (columnList.isEmpty) {
-      throw UnsupportedError(
-        "No columns defined for ItemInfo version $version",
-      );
-    }
-    var params = [];
-    for (final column in columnList) {
-      params.add('$column ${columnTypes[column]}');
-    }
-    final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
-    print('Creating table: $sql');
-    if (db != null) {
-      await db.execute(sql);
-    } else if (batch != null) {
-      batch.execute(sql);
-    }
-  }
-
-  /// on upgrade database table
-  Future<void> onUpgrade(
-    int oldVersion,
-    int newVersion, {
-    DatabaseExecutor? db,
-    Batch? batch,
-  }) async {
-    var columnList = [];
-    for (var i = 1; i <= oldVersion; i++) {
-      final oneColumnList = columnListByVersion[i] ?? [];
-      columnList.addAll(oneColumnList);
-    }
-    if (columnList.isEmpty) {
-      await onCreate(newVersion, db: db, batch: batch);
-      return;
-    }
-
-    columnList = [];
-    for (var i = oldVersion + 1; i <= newVersion; i++) {
-      final newColumnList = columnListByVersion[i] ?? [];
-      columnList.addAll(newColumnList);
-    }
-    for (final column in columnList) {
-      final sql =
-          'ALTER TABLE $tableName ADD COLUMN $column ${columnTypes[column]}';
-      print('Altering table: $sql');
-      if (db != null) {
-        await db.execute(sql);
-      } else if (batch != null) {
-        batch.execute(sql);
-      }
-    }
-  }
-
-  static Map<String, Object?> toSqlMap(ItemInfo item) {
-    final values = <String, Object?>{};
-    if (item.id != 0) {
-      values["id"] = item.id;
-    }
-    values["name"] = item.name;
-    values["stock"] = item.stock;
-    values["color"] = item.color.name;
-    values["weight"] = item.weight;
-    values["is_active"] = item.isActive ? 1 : 0;
-    values["created"] = item.created.toUtc().microsecondsSinceEpoch;
-    return values;
-  }
-
-  static ItemInfo fromSqlMap(Map<String, Object?> map) {
-    final keys = map.keys.toSet();
-    final params = <String, Object>{};
-    if (!keys.contains("name")) {
-      throw ArgumentError("Missing required key name in map");
-    }
-    if (!keys.contains("color")) {
-      throw ArgumentError("Missing required key color in map");
-    }
-    if (!keys.contains("weight")) {
-      throw ArgumentError("Missing required key weight in map");
-    }
-
-    var id = 0;
-    if (keys.contains('id')) {
-      id = map['id'] as int;
-      keys.remove("id");
-    }
-
-    final name = map['name'] as String;
-    keys.remove("name");
-
-    var stock = 0;
-    if (keys.contains('stock')) {
-      stock = map['stock'] as int;
-      keys.remove("stock");
-    }
-
-    final color = Color.values.byName(map['color'] as String);
-    keys.remove("color");
-
-    final weight = map['weight'] as double;
-    keys.remove("weight");
-
-    var isActive = true;
-    if (keys.contains('is_active')) {
-      isActive = (map['is_active'] as int) == 0 ? false : true;
-      keys.remove("is_active");
-    }
-
-    if (keys.contains('created')) {
-      params['created'] = DateTime.fromMicrosecondsSinceEpoch(
-        map['created'] as int,
-      ).toLocal();
-      keys.remove("created");
-    }
-
-    if (keys.isNotEmpty) {
-      throw ArgumentError('Unkown map keys. $keys');
-    }
-
-    final item = ItemInfo(
-      name,
-      id: id,
-      stock: stock,
-      color: color,
-      weight: weight,
-      isActive: isActive,
-    );
-
-    if (params.containsKey('created')) {
-      item.created = params['created'] as DateTime;
-    }
-    return item;
-  }
-
-  Future<int> register(
-    ItemInfo item, {
-    DatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-
-    final map = item.toSqlMap();
-    var command = 'REPLACE INTO';
-    if (item.id == 0) {
-      command = 'INSERT INTO';
-    }
-    final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
-    // print('register sql: $sql');
-    // print('args: ${map.values.toList()}');
-
-    if (db != null) {
-      final id = await db.rawInsert(sql, map.values.toList());
-      item.id = id;
-      return id;
-    } else if (batch != null) {
-      batch.rawInsert(sql, map.values.toList(), (noResult, object) {
-        if (item.id == 0) {
-          if (noResult != true && object is int) {
-            item.id = object;
-          }
-        }
-        return object;
-      });
-    }
-    return -1;
-  }
-
-  Future<List<ItemInfo>> query({
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    DatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-
-    if (db != null) {
-      final result = await db.query(
-        tableName,
-        where: where,
-        whereArgs: whereArgs,
-        orderBy: orderBy,
-        limit: limit,
-        offset: offset,
-      );
-      return result.map((entry) => ItemInfo.fromSqlMap(entry)).toList();
-    } else if (batch != null) {
-      batch.query(
-        tableName,
-        where: where,
-        whereArgs: whereArgs,
-        orderBy: orderBy,
-        limit: limit,
-        offset: offset,
-        onCommit: (noResult, object) {
-          if (noResult == true || object is! List<Map<String, Object?>>) {
-            throw StateError('returned object $object is not expected type.');
-          }
-          final result = object
-              .map((entry) => ItemInfo.fromSqlMap(entry))
-              .toList();
-
-          return result;
-        },
-      );
-    }
-    return [];
-  }
-
-  Future<ItemInfo?> get(
-    int id, {
-    DatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-
-    if (db != null) {
-      final result = await query(
-        where: '${column.id} = ?',
-        whereArgs: [id],
-        db: db,
-      );
-
-      if (result.isEmpty) {
-        return null;
-      }
-
-      assert(result.length == 1);
-      return result[0];
-    } else if (batch != null) {
-      batch.query(
-        tableName,
-        where: '${column.id} = ?',
-        whereArgs: [id],
-        onCommit: (noResult, object) {
-          if (noResult == true || object is! List<Map<String, Object?>>) {
-            throw StateError('returned object $object is not expected type.');
-          }
-          final result = object
-              .map((entry) => ItemInfo.fromSqlMap(entry))
-              .toList();
-          if (result.isEmpty) {
-            return null;
-          }
-          assert(result.length == 1);
-
-          return result[0];
-        },
-      );
-    }
-    return null;
-  }
-
-  Future<int> delete(
-    ItemInfo item, {
     DatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {

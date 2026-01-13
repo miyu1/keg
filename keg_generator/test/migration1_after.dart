@@ -50,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   @override
   Future<String> getPathToOpen() async {
     // Implement your logic to get the database path
-    return 'app.db';
+    return 'migration1.db';
   }
 }
 
