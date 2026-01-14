@@ -6,38 +6,7 @@ import 'package:source_gen/source_gen.dart';
 
 import 'package:keg_annotation/keg_annotation.dart';
 
-enum _DataType {
-  dtUnknown(dartType: ''),
-  dtInteger(dartType: 'int'),
-  dtDouble(dartType: 'double'),
-  dtString(dartType: 'String'),
-  dtBool(dartType: 'bool'),
-  dtDateTime(dartType: 'DateTime'),
-  dtEnum(dartType: '');
-
-  const _DataType({required this.dartType});
-
-  final String dartType;
-}
-
-enum ConstructType {
-  required,     // required parameter of constructor
-  optional,     // optional parameter of constructor
-  notIncluded;  // not included in constructor 
-}
-
-class _FieldInfo {
-  String name = '';
-  String columnName = '';
-  _DataType type = .dtUnknown;
-  String className = ''; // for enum class
-  String defaultValue = '';
-  //bool isRequired = false;
-  ConstructType constructType = .notIncluded;
-}
-
 class TableGenerator extends GeneratorForAnnotation<Table> {
-
   final Map<String, _FieldInfo> _fieldMap = {};
   final List<String> _requiredPositional = [];
   final List<String> _optionalPositional = [];
@@ -56,7 +25,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     // initialize values
     _fieldMap.clear();
     _requiredPositional.clear();
-    _optionalPositional.clear(); 
+    _optionalPositional.clear();
     _columnMap.clear();
 
     final className = element.displayName;
@@ -66,8 +35,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     String appDbName = '';
     (schemaVersion, appDbName) = await _getSchemaVersion(className, buildStep);
     if (schemaVersion == 0) {
-      log.warning('class $className is not included in any database.');
-      return '// $className is not included in any database.';
+      final msg = 'class $className is not included in any database.';
+      log.warning(msg);
+      return '// $msg';
     }
 
     final oldColumnList = <String>[];
@@ -79,7 +49,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       }
       await _analyzeStaticFields(element, schemaVersion, buildStep);
 
-      for(var version = 1; version < schemaVersion; version++) {
+      for (var version = 1; version < schemaVersion; version++) {
         final key = 'v${version}ColumnList';
         oldColumnList.addAll(_columnMap[key] ?? []);
       }
@@ -138,10 +108,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           _DataType.dtString => " DEFAULT ''",
           _DataType.dtBool => ' DEFAULT 0',
           _DataType.dtDateTime => ' DEFAULT 0',
-          _DataType.dtEnum => " DEFAULT '\${${field.className}.values[0].name}'",
+          _DataType.dtEnum =>
+            " DEFAULT '\${${field.className}.values[0].name}'",
           _ => '',
         };
-
       }
       columnTypes += '\'${field.columnName}\':"$dbTypeStr", ';
     }
@@ -153,13 +123,14 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       'class _\$${className}Helper {',
       '  final String tableName = \'$tableName\';',
       '  final column = $columnRecord;',
-      '  final columnTypes = $columnTypes;',];
+      '  final columnTypes = $columnTypes;',
+    ];
 
     var columnListByVersion = '';
-    for(var version = 1; version < schemaVersion; version++) {
+    for (var version = 1; version < schemaVersion; version++) {
       final key = 'v${version}ColumnList';
       if (_columnMap.containsKey(key)) {
-        final value = _columnMap[key]?.map((e) => "'$e'",).join(', '); 
+        final value = _columnMap[key]?.map((e) => "'$e'").join(', ');
         lines.add('  static final $key = [$value];');
         columnListByVersion += '$version: $key, ';
       }
@@ -170,13 +141,14 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '  static final v${schemaVersion}ColumnList = $columnList;',
       //'  final columnListByVersion = {1: v1ColumnList};',
       '  final columnListByVersion = {$columnListByVersion};',
-      '',]);
+      '',
+    ]);
 
     lines.addAll(_generateTableCreators(className));
     lines.addAll(_generateMapConverters(className));
     lines.addAll(_generateDataHandlers(className, appDbName));
 
-    lines.add('}'); // end of class 
+    lines.add('}'); // end of class
 
     return lines.join('\n');
   }
@@ -236,15 +208,13 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '      }',
       '    }',
       '  }'
-      ''
+          '',
     ];
 
     return lines;
   }
 
-  List<String> _generateMapConverters(
-    String className,
-  ) {
+  List<String> _generateMapConverters(String className) {
     var lines = <String>[];
 
     // Generate the toSqlMap method
@@ -274,47 +244,56 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     lines.add('    return values;');
     lines.add('  }');
 
-
     // Generate the fromSqlMap method
     lines.add('static $className fromSqlMap(Map<String, Object?> map) {');
     lines.add('  final keys = map.keys.toSet();');
     if (_fieldMap.values.any((field) => field.constructType == .notIncluded)) {
       lines.add(' final params = <String, Object>{};');
-    } 
+    }
 
     // check required fields
-    for (final field in _fieldMap.values.where((field) => field.constructType == .required)) {
+    for (final field in _fieldMap.values.where(
+      (field) => field.constructType == .required,
+    )) {
       lines.add('if (!keys.contains("${field.columnName}")) {');
-      lines.add('  throw ArgumentError("Missing required key ${field.columnName} in map");');
+      lines.add(
+        '  throw ArgumentError("Missing required key ${field.columnName} in map");',
+      );
       lines.add('}');
     }
     lines.add('');
 
-    for(final field in _fieldMap.values) {
-      if(field.constructType == .required) {
-        lines.add('final ${field.name} =');      
-      } else if(field.constructType == .optional) {
+    for (final field in _fieldMap.values) {
+      if (field.constructType == .required) {
+        lines.add('final ${field.name} =');
+      } else if (field.constructType == .optional) {
         lines.add('var ${field.name} = ${field.defaultValue};');
         lines.add("if (keys.contains('${field.columnName}')) {");
         lines.add('${field.name} =');
-      } else if(field.constructType == .notIncluded) {
+      } else if (field.constructType == .notIncluded) {
         lines.add("if (keys.contains('${field.columnName}')) {");
         lines.add("params['${field.name}'] = ");
       }
       if (field.type == .dtUnknown) {
-        throw InvalidGenerationSourceError('type of ${field.name} in $className is not valid');
+        throw InvalidGenerationSourceError(
+          'type of ${field.name} in $className is not valid',
+        );
       } else if (field.type == .dtBool) {
         lines.add("(map['${field.columnName}'] as int) == 0 ? false : true;");
       } else if (field.type == .dtDateTime) {
-        lines.add("DateTime.fromMicrosecondsSinceEpoch(map['${field.columnName}'] as int).toLocal();");
+        lines.add(
+          "DateTime.fromMicrosecondsSinceEpoch(map['${field.columnName}'] as int).toLocal();",
+        );
       } else if (field.type == .dtEnum) {
-        lines.add("${field.className}.values.byName(map['${field.columnName}'] as String);");
+        lines.add(
+          "${field.className}.values.byName(map['${field.columnName}'] as String);",
+        );
       } else {
         lines.add("map['${field.columnName}'] as ${field.type.dartType};");
       }
       lines.add('keys.remove("${field.columnName}");');
 
-      if(field.constructType != .required) {
+      if (field.constructType != .required) {
         lines.add('}');
       }
       lines.add('');
@@ -326,10 +305,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     lines.add('');
 
     lines.add('final item = $className(');
-    for(final param in _requiredPositional) {
+    for (final param in _requiredPositional) {
       lines.add('$param,');
     }
-    for(final param in _optionalPositional) {
+    for (final param in _optionalPositional) {
       lines.add('$param,');
     }
 
@@ -348,7 +327,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     lines.add(');');
     lines.add('');
 
-    for (final field in _fieldMap.values.where((field) => field.constructType == .notIncluded)) {
+    for (final field in _fieldMap.values.where(
+      (field) => field.constructType == .notIncluded,
+    )) {
       lines.add("if (params.containsKey('${field.name}')) {");
       var type = field.type.dartType;
       if (field.type == .dtEnum) {
@@ -364,10 +345,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     return lines;
   }
 
-  List<String> _generateDataHandlers(
-    String className,
-    String appDbName
-  ) {
+  List<String> _generateDataHandlers(String className, String appDbName) {
     final batch = '_\$${appDbName}BatchWrapper?';
 
     var lines = <String>[
@@ -400,7 +378,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '    }',
       '    return object;',
       '  });'
-      '}',
+          '}',
       'return -1;',
       '}',
       '',
@@ -426,7 +404,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '  },',
       ');',
       '}',
-      '  return [];',  
+      '  return [];',
       '}',
       '',
       'Future<$className?> get(int id, {DatabaseExecutor? db, $batch batch}) async {',
@@ -454,7 +432,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '    if (result.isEmpty) {',
       '       return null;',
       '    }'
-      '',
+          '',
       '    assert(result.length == 1);',
       '',
       '    return result[0];',
@@ -471,19 +449,16 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       ' if (db != null) {',
       "    final id = await db.delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);",
       '    return id;'
-      ' } else if (batch != null) {',
+          ' } else if (batch != null) {',
       "    batch.delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);"
-      ' }',
+          ' }',
       ' return -1;'
-      '}',
-
+          '}',
     ];
     return lines;
   }
 
-  Future<void> _analyzeFields(
-    ClassElement element,
-  ) async {
+  Future<void> _analyzeFields(ClassElement element) async {
     _fieldMap.clear();
     _requiredPositional.clear();
 
@@ -493,6 +468,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       }
       if (field.isStatic) {
         //fieldInfo.isStatic = true;
+        continue;
+      }
+
+      if (_annotatedWith(field, 'ignore')) {
         continue;
       }
 
@@ -512,7 +491,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         type = _DataType.dtString;
       } else if (field.type.isDartCoreBool) {
         type = _DataType.dtBool;
-      } else if (field.type.element?.library?.displayName == 'dart.core' && typeName == 'DateTime') {
+      } else if (field.type.element?.library?.displayName == 'dart.core' &&
+          typeName == 'DateTime') {
         type = _DataType.dtDateTime;
       } else if (field.type.element is EnumElement) {
         type = _DataType.dtEnum;
@@ -529,7 +509,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     final constructor = element.unnamedConstructor;
     if (constructor == null || constructor.isPrivate) {
-      final msg = 'class ${element.displayName} must have an unnamed constructor';
+      final msg =
+          'class ${element.displayName} must have an unnamed constructor';
       throw InvalidGenerationSourceError(msg);
     }
 
@@ -538,9 +519,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         .where((param) => param.isPositional)
         .toList();
     for (final param in positionalParams) {
-      if(!_fieldMap.containsKey(param.name)) {
-        throw InvalidGenerationSourceError( 
-          'No matching field for constructor parameter ${param.name} in class ${element.displayName}');
+      if (!_fieldMap.containsKey(param.name)) {
+        throw InvalidGenerationSourceError(
+          'No matching field for constructor parameter ${param.name} in class ${element.displayName}',
+        );
       }
       if (param.isRequired) {
         _fieldMap[param.name]!.constructType = .required;
@@ -551,15 +533,18 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       }
     }
 
-
-    final namedParams = paramList
-        .where((param) => param.isNamed)
-        .toList();
+    final namedParams = paramList.where((param) => param.isNamed).toList();
     for (final param in namedParams) {
-      if(!_fieldMap.containsKey(param.displayName) && param.isRequired) {
-        throw InvalidGenerationSourceError( 
-          'No matching field for constructor parameter ${param.name} in class ${element.displayName}');
+      if (!_fieldMap.containsKey(param.name) && param.isRequired) {
+        throw InvalidGenerationSourceError(
+          'No matching field for constructor parameter ${param.name} in class ${element.displayName}',
+        );
       }
+      if (!_fieldMap.containsKey(param.name)) {
+        // optional constructor parameter is not field. ignore.
+        continue;
+      }
+
       if (param.isRequired) {
         _fieldMap[param.name]!.constructType = .required;
       } else {
@@ -569,14 +554,15 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     final optionalParams = paramList.where((param) => param.isOptional);
 
-    for(final param in optionalParams) {
-      if(!_fieldMap.containsKey(param.displayName)) {
+    for (final param in optionalParams) {
+      if (!_fieldMap.containsKey(param.displayName)) {
         continue;
       }
       if (!param.hasDefaultValue || param.defaultValueCode == null) {
-        throw InvalidGenerationSourceError( 
+        throw InvalidGenerationSourceError(
           'constructor parameter ${param.name} of class ${element.displayName} '
-          'is optional but not have default value.');
+          'is optional but not have default value.',
+        );
       }
       final defaultValue = param.defaultValueCode!;
       _fieldMap[param.displayName]!.defaultValue = defaultValue;
@@ -588,8 +574,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     int schemaVersion,
     BuildStep buildStep,
   ) async {
-    for(final field in element.fields) {
-      if(!field.isStatic) {
+    for (final field in element.fields) {
+      if (!field.isStatic) {
         continue;
       }
       if (!field.displayName.endsWith('ColumnList')) {
@@ -611,7 +597,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
   }
 
   /// get schemaVersion from KegDb annotation
-  Future<(int, String)> _getSchemaVersion(String className, BuildStep buildStep) async {
+  Future<(int, String)> _getSchemaVersion(
+    String className,
+    BuildStep buildStep,
+  ) async {
     // find KegDb annotation
     final library = await buildStep.inputLibrary;
     final libraryReader = LibraryReader(library);
@@ -620,15 +609,17 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     var appdb = '';
     int version = 0;
-    for(final annotatedElement in annotatedElements){
+    for (final annotatedElement in annotatedElements) {
       final appDbElement = annotatedElement.element;
       if (appDbElement is! ClassElement) {
-        // could be error but ignores this time 
+        // could be error but ignores this time
         continue;
       }
       final dartObject = annotatedElement.annotation.objectValue;
-      final tableNameList = dartObject.getField('tables')?.toListValue()
-        ?.map((e) => e.toTypeValue()?.getDisplayString(),);
+      final tableNameList = dartObject
+          .getField('tables')
+          ?.toListValue()
+          ?.map((e) => e.toTypeValue()?.getDisplayString());
       if (tableNameList == null) {
         continue;
       }
@@ -642,7 +633,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       // if (version != 0 &&  version != tmpVersion) {
       if (version != 0) {
         //final msg = 'class $className is included in multiple database and different schema version';
-        final msg = 'class $className is included in multiple database($appdb and ${appDbElement.displayName})';
+        final msg =
+            'class $className is included in multiple database($appdb and ${appDbElement.displayName})';
         throw InvalidGenerationSourceError(msg);
       }
       appdb = appDbElement.displayName;
@@ -659,6 +651,58 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         .replaceAllMapped(regex, (Match m) => '_${m.group(0)}')
         .toLowerCase();
   }
+
+  bool _annotatedWith(FieldElement field, String name) {
+    bool found = false;
+
+    for (final annotation in field.metadata.annotations) {
+      final annoElem = annotation.element;
+      if (annoElem == null) {
+        continue;
+      }
+      final library = annoElem.library;
+      if (library == null) {
+        continue;
+      }
+      if (annoElem.name == name &&
+          library.identifier.startsWith('package:keg_annotation')) {
+        found = true;
+        break;
+      }
+    }
+
+    return found;
+  }
+}
+
+enum _DataType {
+  dtUnknown(dartType: ''),
+  dtInteger(dartType: 'int'),
+  dtDouble(dartType: 'double'),
+  dtString(dartType: 'String'),
+  dtBool(dartType: 'bool'),
+  dtDateTime(dartType: 'DateTime'),
+  dtEnum(dartType: '');
+
+  const _DataType({required this.dartType});
+
+  final String dartType;
+}
+
+enum ConstructType {
+  required, // required parameter of constructor
+  optional, // optional parameter of constructor
+  notIncluded, // not included in constructor
+}
+
+class _FieldInfo {
+  String name = '';
+  String columnName = '';
+  _DataType type = .dtUnknown;
+  String className = ''; // for enum class
+  String defaultValue = '';
+  //bool isRequired = false;
+  ConstructType constructType = .notIncluded;
 }
 
 class _StringListVisitor extends GeneralizingAstVisitor {

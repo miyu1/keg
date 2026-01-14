@@ -137,7 +137,7 @@ void main() async {
     batch2.registerUser(user2);
     final result2 = await batch2.apply(noResult: true);
     expect(result2, isEmpty);
-    expect(user2.id, 0);
+    expect(user2.id, 0); // !!
 
     // when id is not 0, register ends normally
     final user3 = User('Jane', 10);

@@ -1,10 +1,6 @@
-import 'dart:io';
 import 'package:test/test.dart';
-import 'package:build_test/build_test.dart';
 
-import 'package:build/build.dart';
-import 'package:source_gen/source_gen.dart';
-import 'package:keg_generator/keg_generator.dart';
+import 'common.dart';
 
 // to run debug for generators
 void main() {
@@ -14,13 +10,14 @@ void main() {
     });
 
     test('testGenerator function', () async {
-      await testGenerator('sole_table_test');
+      await testGenerator('ignore_test');
       //print('testGenerator output: ${output.join('\n')}');
     });
   });
 
 }
 
+/*
 Future<List<String>> testGenerator(String name) async {
   // You can add shared setup code for multiple tests here.
   final readerwriter = TestReaderWriter(rootPackage: 'a');
@@ -148,3 +145,4 @@ class ProcessRunner {
     stdout = [];
   }
 }
+*/

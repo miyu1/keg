@@ -1,3 +1,5 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'migration1_after.dart';
 
 // **************************************************************************
@@ -969,15 +971,16 @@ class _$ItemInfoHelper {
     'is_active': "INTEGER NOT NULL DEFAULT 0",
     'created': "INTEGER NOT NULL DEFAULT 0",
   };
-  static final v1ColumnList = ['id', 'name'];
   static final v2ColumnList = [
+    'id',
+    'name',
     'stock',
     'color',
     'weight',
     'is_active',
     'created',
   ];
-  final columnListByVersion = {1: v1ColumnList, 2: v2ColumnList};
+  final columnListByVersion = {2: v2ColumnList};
 
   /// on create database table
   Future<void> onCreate(
