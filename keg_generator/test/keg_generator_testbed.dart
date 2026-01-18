@@ -10,7 +10,7 @@ void main() {
     });
 
     test('testGenerator function', () async {
-      await testGenerator('ignore_test');
+      await testGenerator('one_to_many_test');
       //print('testGenerator output: ${output.join('\n')}');
     });
   });

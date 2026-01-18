@@ -6,7 +6,48 @@ part of 'migration2_after.dart';
 // DatabaseGenerator
 // **************************************************************************
 
-class _$AppDatabaseTransactionWrapper implements Transaction {
+abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
+  @override
+  _$AppDatabaseBatchWrapper batch();
+
+  /// Insert or update User.
+  /// If id is 0, insert and sets id to generated value.
+  /// If specified id already exists in table, update the record.
+  /// If specified id does not exist in table, insert with the id.
+  Future<int> registerUser(User item);
+
+  Future<List<User>> queryUser({
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+    int? offset,
+  });
+
+  Future<User?> getUser(int id);
+
+  Future<int> deleteUser(User item);
+
+  /// Insert or update ItemInfo.
+  /// If id is 0, insert and sets id to generated value.
+  /// If specified id already exists in table, update the record.
+  /// If specified id does not exist in table, insert with the id.
+  Future<int> registerItemInfo(ItemInfo item);
+
+  Future<List<ItemInfo>> queryItemInfo({
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+    int? offset,
+  });
+
+  Future<ItemInfo?> getItemInfo(int id);
+
+  Future<int> deleteItemInfo(ItemInfo item);
+}
+
+class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   _$AppDatabase appdb;
   Transaction transaction;
 
@@ -17,14 +58,16 @@ class _$AppDatabaseTransactionWrapper implements Transaction {
 
   @override
   _$AppDatabaseBatchWrapper batch() {
-    final batch = database.batch();
-    final wrapper = _$AppDatabaseBatchWrapper(appdb, batch);
+    final batch = transaction.batch();
+    final wrapper = _$AppDatabaseBatchWrapper(appdb, this, batch);
     return wrapper;
   }
 
+  @override
   Future<int> registerUser(User item) =>
-      appdb.userHelper.register(item, db: transaction);
+      appdb.userHelper.register(item, db: this);
 
+  @override
   Future<List<User>> queryUser({
     String? where,
     List<Object?>? whereArgs,
@@ -37,17 +80,20 @@ class _$AppDatabaseTransactionWrapper implements Transaction {
     orderBy: orderBy,
     limit: limit,
     offset: offset,
-    db: transaction,
+    db: this,
   );
 
-  Future<User?> getUser(int id) => appdb.userHelper.get(id, db: transaction);
+  @override
+  Future<User?> getUser(int id) => appdb.userHelper.get(id, db: this);
 
-  Future<int> deleteUser(User item) =>
-      appdb.userHelper.delete(item, db: transaction);
+  @override
+  Future<int> deleteUser(User item) => appdb.userHelper.delete(item, db: this);
 
+  @override
   Future<int> registerItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.register(item, db: transaction);
+      appdb.itemInfoHelper.register(item, db: this);
 
+  @override
   Future<List<ItemInfo>> queryItemInfo({
     String? where,
     List<Object?>? whereArgs,
@@ -60,14 +106,16 @@ class _$AppDatabaseTransactionWrapper implements Transaction {
     orderBy: orderBy,
     limit: limit,
     offset: offset,
-    db: transaction,
+    db: this,
   );
 
+  @override
   Future<ItemInfo?> getItemInfo(int id) =>
-      appdb.itemInfoHelper.get(id, db: transaction);
+      appdb.itemInfoHelper.get(id, db: this);
 
+  @override
   Future<int> deleteItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.delete(item, db: transaction);
+      appdb.itemInfoHelper.delete(item, db: this);
 
   // passthrough methods
   @override
@@ -185,12 +233,49 @@ class _$AppDatabaseTransactionWrapper implements Transaction {
 }
 
 class _$AppDatabaseBatchWrapper implements Batch {
-  _$AppDatabase appdb;
+  _$AppDatabase appdb; // used for refer helpers
+  _$AppDatabaseExecutor executor; // database or transaction used for exec sqls
   Batch batch;
-  int index = 0;
-  Map<int, Object? Function(bool? noResult, Object?)> callbacks = {};
+  int callBackIndex = 0;
+  Map<int, List<Future<Object?> Function(bool? noResult, Object?)>> callBacks =
+      {};
 
-  _$AppDatabaseBatchWrapper(this.appdb, this.batch);
+  _$AppDatabaseBatchWrapper(this.appdb, this.executor, this.batch);
+
+  void _addCallBack(
+    int index,
+    Future<Object?> Function(bool? noResult, Object?) callback,
+  ) {
+    var callBackList = callBacks[index];
+    if (callBackList == null) {
+      callBackList = [];
+      callBacks[index] = callBackList;
+    }
+    callBackList.add(callback);
+  }
+
+  Future<List<Object?>> _execCallBacks(
+    List<Object?> result,
+    bool? noResult,
+  ) async {
+    for (final index in callBacks.keys) {
+      Object? object;
+      if (index < result.length) {
+        object = result[index];
+      }
+      final callbackList = callBacks[index];
+      if (callbackList == null) {
+        continue;
+      }
+      for (final callback in callbackList) {
+        object = await callback(noResult, object);
+      }
+      if (index < result.length) {
+        result[index] = object;
+      }
+    }
+    return result;
+  }
 
   @override
   Future<List<Object?>> commit({
@@ -205,20 +290,9 @@ class _$AppDatabaseBatchWrapper implements Batch {
     );
 
     result = result.toList(); // read only list to writable list
-    for (final index in callbacks.keys) {
-      Object? object;
-      if (index < result.length) {
-        object = result[index];
-      }
-      final callback = callbacks[index];
-      final ret = callback?.call(noResult, object);
-      if (index < result.length) {
-        result[index] = ret;
-      }
-    }
-
-    callbacks = {};
-    index = 0;
+    result = await _execCallBacks(result, noResult);
+    callBacks = {};
+    callBackIndex = 0;
 
     return result;
   }
@@ -231,25 +305,22 @@ class _$AppDatabaseBatchWrapper implements Batch {
     );
 
     result = result.toList(); // read only list to writable list
-    for (final index in callbacks.keys) {
-      Object? object;
-      if (index < result.length) {
-        object = result[index];
-      }
-      final callback = callbacks[index];
-      final ret = callback?.call(noResult, object);
-      if (index < result.length) {
-        result[index] = ret;
-      }
-    }
-
-    callbacks = {};
-    index = 0;
+    result = await _execCallBacks(result, noResult);
+    callBacks = {};
+    callBackIndex = 0;
 
     return result;
   }
 
-  void registerUser(User item) => appdb.userHelper.register(item, batch: this);
+  void registerUser(
+    User item, [
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
+  ]) {
+    appdb.userHelper.register(item, batch: this);
+    if (onCommit != null) {
+      _addCallBack(callBackIndex - 1, onCommit);
+    }
+  }
 
   void queryUser({
     String? where,
@@ -257,21 +328,42 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String? orderBy,
     int? limit,
     int? offset,
-  }) => appdb.userHelper.query(
-    where: where,
-    whereArgs: whereArgs,
-    orderBy: orderBy,
-    limit: limit,
-    offset: offset,
-    batch: this,
-  );
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
+  }) {
+    appdb.userHelper.query(
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+      offset: offset,
+      batch: this,
+    );
+    if (onCommit != null) {
+      _addCallBack(callBackIndex - 1, onCommit);
+    }
+  }
 
-  void getUser(int id) => appdb.userHelper.get(id, batch: this);
+  void getUser(
+    int id, [
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
+  ]) {
+    appdb.userHelper.get(id, batch: this);
+    if (onCommit != null) {
+      _addCallBack(callBackIndex - 1, onCommit);
+    }
+  }
 
   void deleteUser(User item) => appdb.userHelper.delete(item, batch: this);
 
-  void registerItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.register(item, batch: this);
+  void registerItemInfo(
+    ItemInfo item, [
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
+  ]) {
+    appdb.itemInfoHelper.register(item, batch: this);
+    if (onCommit != null) {
+      _addCallBack(callBackIndex - 1, onCommit);
+    }
+  }
 
   void queryItemInfo({
     String? where,
@@ -279,16 +371,30 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String? orderBy,
     int? limit,
     int? offset,
-  }) => appdb.itemInfoHelper.query(
-    where: where,
-    whereArgs: whereArgs,
-    orderBy: orderBy,
-    limit: limit,
-    offset: offset,
-    batch: this,
-  );
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
+  }) {
+    appdb.itemInfoHelper.query(
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+      offset: offset,
+      batch: this,
+    );
+    if (onCommit != null) {
+      _addCallBack(callBackIndex - 1, onCommit);
+    }
+  }
 
-  void getItemInfo(int id) => appdb.itemInfoHelper.get(id, batch: this);
+  void getItemInfo(
+    int id, [
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
+  ]) {
+    appdb.itemInfoHelper.get(id, batch: this);
+    if (onCommit != null) {
+      _addCallBack(callBackIndex - 1, onCommit);
+    }
+  }
 
   void deleteItemInfo(ItemInfo item) =>
       appdb.itemInfoHelper.delete(item, batch: this);
@@ -301,13 +407,13 @@ class _$AppDatabaseBatchWrapper implements Batch {
   void rawInsert(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.rawInsert(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
@@ -316,7 +422,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     Map<String, Object?> values, {
     String? nullColumnHack,
     ConflictAlgorithm? conflictAlgorithm,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     batch.insert(
       table,
@@ -325,22 +431,22 @@ class _$AppDatabaseBatchWrapper implements Batch {
       conflictAlgorithm: conflictAlgorithm,
     );
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
   void rawUpdate(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.rawUpdate(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
@@ -350,7 +456,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String? where,
     List<Object?>? whereArgs,
     ConflictAlgorithm? conflictAlgorithm,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     batch.update(
       table,
@@ -360,22 +466,22 @@ class _$AppDatabaseBatchWrapper implements Batch {
       conflictAlgorithm: conflictAlgorithm,
     );
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
   void rawDelete(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.rawDelete(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
@@ -383,26 +489,26 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String table, {
     String? where,
     List<Object?>? whereArgs,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     batch.delete(table, where: where, whereArgs: whereArgs);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
   void execute(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.execute(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
@@ -417,7 +523,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String? orderBy,
     int? limit,
     int? offset,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     batch.query(
       table,
@@ -432,26 +538,26 @@ class _$AppDatabaseBatchWrapper implements Batch {
       offset: offset,
     );
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
   void rawQuery(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.rawQuery(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 }
 
-abstract class _$AppDatabase implements DatabaseExecutor {
+abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   int get schemaVersion => 2;
 
   @override
@@ -505,9 +611,10 @@ abstract class _$AppDatabase implements DatabaseExecutor {
   /// If id is 0, insert and sets id to generated value.
   /// If specified id already exists in table, update the record.
   /// If specified id does not exist in table, insert with the id.
-  Future<int> registerUser(User item) =>
-      userHelper.register(item, db: database);
+  @override
+  Future<int> registerUser(User item) => userHelper.register(item, db: this);
 
+  @override
   Future<List<User>> queryUser({
     String? where,
     List<Object?>? whereArgs,
@@ -520,20 +627,24 @@ abstract class _$AppDatabase implements DatabaseExecutor {
     orderBy: orderBy,
     limit: limit,
     offset: offset,
-    db: database,
+    db: this,
   );
 
-  Future<User?> getUser(int id) => userHelper.get(id, db: database);
+  @override
+  Future<User?> getUser(int id) => userHelper.get(id, db: this);
 
-  Future<int> deleteUser(User item) => userHelper.delete(item, db: database);
+  @override
+  Future<int> deleteUser(User item) => userHelper.delete(item, db: this);
 
   /// Insert or update ItemInfo.
   /// If id is 0, insert and sets id to generated value.
   /// If specified id already exists in table, update the record.
   /// If specified id does not exist in table, insert with the id.
+  @override
   Future<int> registerItemInfo(ItemInfo item) =>
-      itemInfoHelper.register(item, db: database);
+      itemInfoHelper.register(item, db: this);
 
+  @override
   Future<List<ItemInfo>> queryItemInfo({
     String? where,
     List<Object?>? whereArgs,
@@ -546,13 +657,15 @@ abstract class _$AppDatabase implements DatabaseExecutor {
     orderBy: orderBy,
     limit: limit,
     offset: offset,
-    db: database,
+    db: this,
   );
 
-  Future<ItemInfo?> getItemInfo(int id) => itemInfoHelper.get(id, db: database);
+  @override
+  Future<ItemInfo?> getItemInfo(int id) => itemInfoHelper.get(id, db: this);
 
+  @override
   Future<int> deleteItemInfo(ItemInfo item) =>
-      itemInfoHelper.delete(item, db: database);
+      itemInfoHelper.delete(item, db: this);
 
   Future<T> transaction<T>(
     Future<T> Function(_$AppDatabaseTransactionWrapper txn) action, {
@@ -576,7 +689,7 @@ abstract class _$AppDatabase implements DatabaseExecutor {
   @override
   _$AppDatabaseBatchWrapper batch() {
     final batch = database.batch();
-    final wrapper = _$AppDatabaseBatchWrapper(this, batch);
+    final wrapper = _$AppDatabaseBatchWrapper(this, this, batch);
     return wrapper;
   }
 
@@ -712,6 +825,7 @@ class _$UserHelper {
     'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
     'name': "TEXT NOT NULL DEFAULT ''",
   };
+  final columnList = ['id', 'name'];
   static final v2ColumnList = ['id', 'name'];
   final columnListByVersion = {2: v2ColumnList};
 
@@ -780,10 +894,13 @@ class _$UserHelper {
 
   static Map<String, Object?> toSqlMap(User item) {
     final values = <String, Object?>{};
+
     if (item.id != 0) {
       values["id"] = item.id;
     }
+
     values["name"] = item.name;
+
     return values;
   }
 
@@ -813,7 +930,7 @@ class _$UserHelper {
 
   Future<int> register(
     User item, {
-    DatabaseExecutor? db,
+    _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
     assert((db != null) ^ (batch != null));
@@ -833,7 +950,7 @@ class _$UserHelper {
       item.id = id;
       return id;
     } else if (batch != null) {
-      batch.rawInsert(sql, map.values.toList(), (noResult, object) {
+      batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
         if (item.id == 0) {
           if (noResult != true && object is int) {
             item.id = object;
@@ -845,19 +962,36 @@ class _$UserHelper {
     return -1;
   }
 
+  Future<List<Map<String, Object?>>> convertReferences(
+    List<Map<String, Object?>> mapList,
+    _$AppDatabaseExecutor db,
+  ) async {
+    var result = mapList;
+    result = result.toList(); // convert to modifiable list
+    final batch = db.batch();
+
+    for (var i = 0; i < result.length; i++) {
+      var map = result[i];
+      map = Map.from(map); // convert to modifiable map
+      result[i] = map;
+    }
+    await batch.commit();
+    return result;
+  }
+
   Future<List<User>> query({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
     int? limit,
     int? offset,
-    DatabaseExecutor? db,
+    _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
     assert((db != null) ^ (batch != null));
 
     if (db != null) {
-      final result = await db.query(
+      var result = await db.query(
         tableName,
         where: where,
         whereArgs: whereArgs,
@@ -865,6 +999,8 @@ class _$UserHelper {
         limit: limit,
         offset: offset,
       );
+      result = await convertReferences(result, db);
+
       return result.map((entry) => User.fromSqlMap(entry)).toList();
     } else if (batch != null) {
       batch.query(
@@ -874,13 +1010,12 @@ class _$UserHelper {
         orderBy: orderBy,
         limit: limit,
         offset: offset,
-        onCommit: (noResult, object) {
+        onCommit: (noResult, object) async {
           if (noResult == true || object is! List<Map<String, Object?>>) {
             throw StateError('returned object $object is not expected type.');
           }
-          final result = object.map((entry) => User.fromSqlMap(entry)).toList();
-
-          return result;
+          var result = await convertReferences(object, batch.executor);
+          return result.map((entry) => User.fromSqlMap(entry)).toList();
         },
       );
     }
@@ -889,7 +1024,7 @@ class _$UserHelper {
 
   Future<User?> get(
     int id, {
-    DatabaseExecutor? db,
+    _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
     assert((db != null) ^ (batch != null));
@@ -912,17 +1047,18 @@ class _$UserHelper {
         tableName,
         where: '${column.id} = ?',
         whereArgs: [id],
-        onCommit: (noResult, object) {
+        onCommit: (noResult, object) async {
           if (noResult == true || object is! List<Map<String, Object?>>) {
             throw StateError('returned object $object is not expected type.');
           }
-          final result = object.map((entry) => User.fromSqlMap(entry)).toList();
-          if (result.isEmpty) {
+
+          if (object.isEmpty) {
             return null;
           }
-          assert(result.length == 1);
 
-          return result[0];
+          var result = await convertReferences(object, batch.executor);
+          assert(result.length == 1);
+          return User.fromSqlMap(result[0]);
         },
       );
     }
@@ -931,7 +1067,7 @@ class _$UserHelper {
 
   Future<int> delete(
     User item, {
-    DatabaseExecutor? db,
+    _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
     assert((db != null) ^ (batch != null));
@@ -971,6 +1107,15 @@ class _$ItemInfoHelper {
     'is_active': "INTEGER NOT NULL DEFAULT 0",
     'created': "INTEGER NOT NULL DEFAULT 0",
   };
+  final columnList = [
+    'id',
+    'name',
+    'weight',
+    'stock',
+    'color',
+    'is_active',
+    'created',
+  ];
   static final v1ColumnList = ['id', 'name', 'weight'];
   static final v2ColumnList = ['stock', 'color', 'is_active', 'created'];
   final columnListByVersion = {1: v1ColumnList, 2: v2ColumnList};
@@ -1042,15 +1187,23 @@ class _$ItemInfoHelper {
 
   static Map<String, Object?> toSqlMap(ItemInfo item) {
     final values = <String, Object?>{};
+
     if (item.id != 0) {
       values["id"] = item.id;
     }
+
     values["name"] = item.name;
+
     values["stock"] = item.stock;
+
     values["color"] = item.color.name;
+
     values["weight"] = item.weight;
+
     values["is_active"] = item.isActive ? 1 : 0;
+
     values["created"] = item.created.toUtc().microsecondsSinceEpoch;
+
     return values;
   }
 
@@ -1122,7 +1275,7 @@ class _$ItemInfoHelper {
 
   Future<int> register(
     ItemInfo item, {
-    DatabaseExecutor? db,
+    _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
     assert((db != null) ^ (batch != null));
@@ -1142,7 +1295,7 @@ class _$ItemInfoHelper {
       item.id = id;
       return id;
     } else if (batch != null) {
-      batch.rawInsert(sql, map.values.toList(), (noResult, object) {
+      batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
         if (item.id == 0) {
           if (noResult != true && object is int) {
             item.id = object;
@@ -1154,19 +1307,36 @@ class _$ItemInfoHelper {
     return -1;
   }
 
+  Future<List<Map<String, Object?>>> convertReferences(
+    List<Map<String, Object?>> mapList,
+    _$AppDatabaseExecutor db,
+  ) async {
+    var result = mapList;
+    result = result.toList(); // convert to modifiable list
+    final batch = db.batch();
+
+    for (var i = 0; i < result.length; i++) {
+      var map = result[i];
+      map = Map.from(map); // convert to modifiable map
+      result[i] = map;
+    }
+    await batch.commit();
+    return result;
+  }
+
   Future<List<ItemInfo>> query({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
     int? limit,
     int? offset,
-    DatabaseExecutor? db,
+    _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
     assert((db != null) ^ (batch != null));
 
     if (db != null) {
-      final result = await db.query(
+      var result = await db.query(
         tableName,
         where: where,
         whereArgs: whereArgs,
@@ -1174,6 +1344,8 @@ class _$ItemInfoHelper {
         limit: limit,
         offset: offset,
       );
+      result = await convertReferences(result, db);
+
       return result.map((entry) => ItemInfo.fromSqlMap(entry)).toList();
     } else if (batch != null) {
       batch.query(
@@ -1183,15 +1355,12 @@ class _$ItemInfoHelper {
         orderBy: orderBy,
         limit: limit,
         offset: offset,
-        onCommit: (noResult, object) {
+        onCommit: (noResult, object) async {
           if (noResult == true || object is! List<Map<String, Object?>>) {
             throw StateError('returned object $object is not expected type.');
           }
-          final result = object
-              .map((entry) => ItemInfo.fromSqlMap(entry))
-              .toList();
-
-          return result;
+          var result = await convertReferences(object, batch.executor);
+          return result.map((entry) => ItemInfo.fromSqlMap(entry)).toList();
         },
       );
     }
@@ -1200,7 +1369,7 @@ class _$ItemInfoHelper {
 
   Future<ItemInfo?> get(
     int id, {
-    DatabaseExecutor? db,
+    _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
     assert((db != null) ^ (batch != null));
@@ -1223,19 +1392,18 @@ class _$ItemInfoHelper {
         tableName,
         where: '${column.id} = ?',
         whereArgs: [id],
-        onCommit: (noResult, object) {
+        onCommit: (noResult, object) async {
           if (noResult == true || object is! List<Map<String, Object?>>) {
             throw StateError('returned object $object is not expected type.');
           }
-          final result = object
-              .map((entry) => ItemInfo.fromSqlMap(entry))
-              .toList();
-          if (result.isEmpty) {
+
+          if (object.isEmpty) {
             return null;
           }
-          assert(result.length == 1);
 
-          return result[0];
+          var result = await convertReferences(object, batch.executor);
+          assert(result.length == 1);
+          return ItemInfo.fromSqlMap(result[0]);
         },
       );
     }
@@ -1244,7 +1412,7 @@ class _$ItemInfoHelper {
 
   Future<int> delete(
     ItemInfo item, {
-    DatabaseExecutor? db,
+    _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
     assert((db != null) ^ (batch != null));

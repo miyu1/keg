@@ -136,11 +136,12 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
     final className = element.name;
     final genClassName = '_\$$className';
 
+    _generateAppExecutor(genClassName, tableNameList, buffer);
     _generateTranactionWrapper(genClassName, tableNameList, buffer);
     _generateBatchWrapper(genClassName, tableNameList, buffer);
 
     buffer.writeln(
-      'abstract class $genClassName implements DatabaseExecutor {',
+      'abstract class $genClassName implements ${genClassName}Executor {',
     );
     buffer.writeln('');
     buffer.writeln('  int get  schemaVersion => $schemaVersion;');
@@ -239,21 +240,21 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       buffer.writeln('/// If id is 0, insert and sets id to generated value.');
       buffer.writeln('/// If specified id already exists in table, update the record.');
       buffer.writeln('/// If specified id does not exist in table, insert with the id.');
-      buffer.writeln('Future<int> register$table($table item)');
-      buffer.writeln('=> ${variableName}Helper.register(item, db: database);');
+      buffer.writeln('@override Future<int> register$table($table item)');
+      buffer.writeln('=> ${variableName}Helper.register(item, db: this);');
       buffer.writeln('');
-      buffer.writeln('Future<List<$table>> query$table({'
+      buffer.writeln('@override Future<List<$table>> query$table({'
         'String? where, List<Object?>? whereArgs, '
         '  String? orderBy, int? limit, int? offset, })');
       buffer.writeln('=>  ${variableName}Helper.query('
         'where: where, whereArgs: whereArgs, orderBy: orderBy, '
-        'limit: limit, offset: offset, db: database);');
+        'limit: limit, offset: offset, db: this);');
       buffer.writeln('');
-      buffer.writeln('Future<$table?> get$table(int id)');
-      buffer.writeln('=> ${variableName}Helper.get(id, db: database);');
+      buffer.writeln('@override Future<$table?> get$table(int id)');
+      buffer.writeln('=> ${variableName}Helper.get(id, db: this);');
       buffer.writeln('');
-      buffer.writeln('Future<int> delete$table($table item)');
-      buffer.writeln('=> ${variableName}Helper.delete(item, db: database);');
+      buffer.writeln('@override Future<int> delete$table($table item)');
+      buffer.writeln('=> ${variableName}Helper.delete(item, db: this);');
       buffer.writeln('');
     }
 
@@ -280,7 +281,7 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
     // batch
     buffer.writeln('@override ${genClassName}BatchWrapper batch() {');
     buffer.writeln('  final batch = database.batch();');
-    buffer.writeln('  final wrapper = ${genClassName}BatchWrapper(this, batch);');
+    buffer.writeln('  final wrapper = ${genClassName}BatchWrapper(this, this, batch);');
     buffer.writeln('  return wrapper;');
     buffer.writeln('}');
     buffer.writeln('');
@@ -302,11 +303,39 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
     return buffer.toString();
   }
 
+  void _generateAppExecutor(
+    String genClassName, List<String?> tableNameList, StringBuffer buffer
+  ) {
+    buffer.writeln('abstract class ${genClassName}Executor extends DatabaseExecutor {');
+    buffer.writeln('@override ${genClassName}BatchWrapper batch();');
+
+    for(final table in tableNameList) {
+      if (table == null) {
+        continue;
+      }
+      buffer.writeln('/// Insert or update $table.');
+      buffer.writeln('/// If id is 0, insert and sets id to generated value.');
+      buffer.writeln('/// If specified id already exists in table, update the record.');
+      buffer.writeln('/// If specified id does not exist in table, insert with the id.');
+      buffer.writeln('Future<int> register$table($table item);');
+      buffer.writeln('');
+      buffer.writeln('Future<List<$table>> query$table({'
+        'String? where, List<Object?>? whereArgs, '
+        '  String? orderBy, int? limit, int? offset, });');
+      buffer.writeln('');
+      buffer.writeln('Future<$table?> get$table(int id);');
+      buffer.writeln('');
+      buffer.writeln('Future<int> delete$table($table item);');
+      buffer.writeln('');
+    }
+    buffer.writeln('}');
+  }
+
   void _generateTranactionWrapper(
     String genClassName, List<String?> tableNameList, StringBuffer buffer
   ) {
     buffer.writeln([
-      'class ${genClassName}TransactionWrapper implements Transaction {',
+      'class ${genClassName}TransactionWrapper implements ${genClassName}Executor {',
       '  $genClassName appdb;'
       '  Transaction transaction;',
       '',
@@ -315,8 +344,8 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       '@override Database get database => transaction.database;',
       '',
       '@override ${genClassName}BatchWrapper batch() {',
-      '  final batch = database.batch();',
-      '  final wrapper = ${genClassName}BatchWrapper(appdb, batch);',
+      '  final batch = transaction.batch();',
+      '  final wrapper = ${genClassName}BatchWrapper(appdb, this, batch);',
       '  return wrapper;',
       '}'
     ].join('\n'));
@@ -327,21 +356,21 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       }
       final variableName = toLowerCamelCase(table);
       buffer.writeln([
-        'Future<int> register$table($table item)',
-        '=> appdb.${variableName}Helper.register(item, db: transaction);',
+        '@override Future<int> register$table($table item)',
+        '=> appdb.${variableName}Helper.register(item, db: this);',
         '',
-        'Future<List<$table>> query$table({',
+        '@override Future<List<$table>> query$table({',
         'String? where, List<Object?>? whereArgs, ',
         '  String? orderBy, int? limit, int? offset, })',
         '=>  appdb.${variableName}Helper.query(',
         'where: where, whereArgs: whereArgs, orderBy: orderBy, ',
-        'limit: limit, offset: offset, db: transaction);',
+        'limit: limit, offset: offset, db: this);',
         '',
-        'Future<$table?> get$table(int id)',
-        '=> appdb.${variableName}Helper.get(id, db: transaction);',
+        '@override Future<$table?> get$table(int id)',
+        '=> appdb.${variableName}Helper.get(id, db: this);',
         '',
-        'Future<int> delete$table($table item)',
-        '=> appdb.${variableName}Helper.delete(item, db: transaction);',
+        '@override Future<int> delete$table($table item)',
+        '=> appdb.${variableName}Helper.delete(item, db: this);',
         '',
       ].join('\n'));
     }
@@ -360,12 +389,43 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
   ) {
     buffer.writeln([
       'class ${genClassName}BatchWrapper implements Batch {',
-      '  $genClassName appdb;'
+      '  $genClassName appdb; // used for refer helpers',
+      '  ${genClassName}Executor executor; // database or transaction used for exec sqls',
       '  Batch batch;',
-      '  int index = 0;',
-      '  Map<int, Object? Function(bool? noResult, Object?)> callbacks = {};',
+      '  int callBackIndex = 0;',
+      '  Map<int, List<Future<Object?> Function(bool? noResult, Object?)>> callBacks = {};',
       '',
-      '  ${genClassName}BatchWrapper(this.appdb, this.batch);',
+      '  ${genClassName}BatchWrapper(this.appdb, this.executor, this.batch);',
+      '',
+      'void _addCallBack(int index, Future<Object?> Function(bool? noResult, Object?) callback) {', 
+      'var callBackList = callBacks[index];',
+      'if (callBackList == null) {',
+      '  callBackList = [];',
+      '  callBacks[index] = callBackList;',
+      '}',
+      'callBackList.add(callback);',
+      '}',
+      ''
+      'Future<List<Object?>> _execCallBacks(List<Object?> result, bool? noResult) async {',
+      ''
+      '  for (final index in callBacks.keys) {',
+      '    Object? object;',
+      '    if (index < result.length) {',
+      '       object = result[index];',
+      '    }',
+      '    final callbackList = callBacks[index];'
+      '    if (callbackList == null) {',
+      '      continue;',
+      '    }',
+      '    for(final callback in callbackList) {'
+      '     object = await callback(noResult, object);'
+      '    }'
+      '    if (index < result.length) {',
+      '       result[index] = object;',
+      '    }',
+      '  }',
+      '  return result;'
+      '}',
       '',
       '@override Future<List<Object?>> commit({bool? exclusive, bool? noResult,',
       '  bool? continueOnError,}) async {',
@@ -373,20 +433,10 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       '     continueOnError: continueOnError);',
       '',
       '    result = result.toList(); // read only list to writable list',
-      '    for (final index in callbacks.keys) {',
-      '      Object? object;',
-      '      if (index < result.length) {',
-      '         object = result[index];',
-      '      }',
-      '      final callback = callbacks[index];'
-      '      final ret = callback?.call(noResult, object);'
-      '      if (index < result.length) {',
-      '         result[index] = ret;',
-      '      }',
-      '    }',
+      '    result = await _execCallBacks(result, noResult);'
       '',
-      '    callbacks = {};',
-      '    index = 0;',
+      '    callBacks = {};',
+      '    callBackIndex = 0;',
       '',
       '    return result;',
       '  }',
@@ -395,47 +445,54 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       '    var result = await batch.apply(noResult:noResult, continueOnError: continueOnError);',
       '',
       '    result = result.toList(); // read only list to writable list',
-      '    for (final index in callbacks.keys) {',
-      '      Object? object;',
-      '      if (index < result.length) {',
-      '         object = result[index];',
-      '      }',
-      '      final callback = callbacks[index];'
-      '      final ret = callback?.call(noResult, object);'
-      '      if (index < result.length) {',
-      '         result[index] = ret;',
-      '      }',
-      '    }',
+      '    result = await _execCallBacks(result, noResult);'
       '',
-      '    callbacks = {};',
-      '    index = 0;',
+      '    callBacks = {};',
+      '    callBackIndex = 0;',
       '',
       '    return result;',
       '  }',
       '',
     ].join('\n'));
 
+    final onCommitArg = 'Future<Object?> Function(bool? noResult, Object?)? onCommit';
     for(final table in tableNameList) {
       if (table == null) {
         continue;
       }
       final variableName = toLowerCamelCase(table);
       buffer.writeln([
-        'void register$table($table item)',
-        '=> appdb.${variableName}Helper.register(item, batch: this);',
+        'void register$table($table item, [$onCommitArg]) {',
+        '  appdb.${variableName}Helper.register(item, batch: this);',
+        '  if (onCommit != null) {',
+        '    _addCallBack(callBackIndex-1, onCommit);',
+        '  }',
+        '}'
         '',
         'void query$table({',
         'String? where, List<Object?>? whereArgs, ',
-        '  String? orderBy, int? limit, int? offset, })',
-        '=>  appdb.${variableName}Helper.query(',
-        'where: where, whereArgs: whereArgs, orderBy: orderBy, ',
-        'limit: limit, offset: offset, batch: this);',
+        ' String? orderBy, int? limit, int? offset, $onCommitArg}) {',
+        ' appdb.${variableName}Helper.query(',
+        ' where: where, whereArgs: whereArgs, orderBy: orderBy, ',
+        '  limit: limit, offset: offset, batch: this);',
+        '  if (onCommit != null) {',
+        '    _addCallBack(callBackIndex-1, onCommit);',
+        '  }',
+        '}'
         '',
-        'void get$table(int id)',
-        '=> appdb.${variableName}Helper.get(id, batch: this);',
+        'void get$table(int id, [$onCommitArg]) {',
+        ' appdb.${variableName}Helper.get(id, batch: this);',
+        '  if (onCommit != null) {',
+        '    _addCallBack(callBackIndex-1, onCommit);',
+        '  }',
+        '}'
         '',
-        'void delete$table($table item)',
-        '=> appdb.${variableName}Helper.delete(item, batch: this);',
+        'void delete$table($table item, [$onCommitArg]) {',
+        ' appdb.${variableName}Helper.delete(item, batch: this);',
+        '  if (onCommit != null) {',
+        '    _addCallBack(callBackIndex-1, onCommit);',
+        '  }',
+        '}'
         '',
       ].join('\n'));
     }
@@ -445,14 +502,15 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
     buffer.writeln('');
     for (var method in batchMethods) {
       var func = method.$1;
-      func = func.replaceAll('%s', 'Object? Function(bool? noResult, Object?)? onCommit');
+      func = func.replaceAll('%s', onCommitArg);
       buffer.writeln([
         '@override  $func {',
         '    batch.${method.$2};',
         '    if (onCommit != null) {',
-        '      callbacks[index] = onCommit;',
+        //'      callbacks[index] = onCommit;',
+        '       _addCallBack(callBackIndex, onCommit);'
         '    }',
-        '    index++;',
+        '    callBackIndex++;',
         '   }',
         ''
       ].join('\n'));

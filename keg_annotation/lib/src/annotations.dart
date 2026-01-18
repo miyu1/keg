@@ -10,9 +10,10 @@ class KegDatabase {
 
 @Target({TargetKind.classType})
 class Table {
-  final String tableName;
+  // final String tableName;
 
-  const Table({this.tableName = ''});
+  // const Table({this.tableName = ''});
+  const Table();
 }
 
 @Target({TargetKind.field})

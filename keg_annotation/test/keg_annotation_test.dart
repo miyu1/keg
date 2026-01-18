@@ -18,11 +18,11 @@ void main() {
   });
 }
 
-@Table()
+@table
 class Class1 {
 }
 
-@Table(tableName: 'custom_name')
+@table
 class Class2 {
   @ignore
   String name = 'example';

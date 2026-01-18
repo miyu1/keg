@@ -6,7 +6,12 @@ part of 'empty_database_test.dart';
 // DatabaseGenerator
 // **************************************************************************
 
-class _$AppDatabaseTransactionWrapper implements Transaction {
+abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
+  @override
+  _$AppDatabaseBatchWrapper batch();
+}
+
+class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   _$AppDatabase appdb;
   Transaction transaction;
 
@@ -17,8 +22,8 @@ class _$AppDatabaseTransactionWrapper implements Transaction {
 
   @override
   _$AppDatabaseBatchWrapper batch() {
-    final batch = database.batch();
-    final wrapper = _$AppDatabaseBatchWrapper(appdb, batch);
+    final batch = transaction.batch();
+    final wrapper = _$AppDatabaseBatchWrapper(appdb, this, batch);
     return wrapper;
   }
 
@@ -138,12 +143,49 @@ class _$AppDatabaseTransactionWrapper implements Transaction {
 }
 
 class _$AppDatabaseBatchWrapper implements Batch {
-  _$AppDatabase appdb;
+  _$AppDatabase appdb; // used for refer helpers
+  _$AppDatabaseExecutor executor; // database or transaction used for exec sqls
   Batch batch;
-  int index = 0;
-  Map<int, Object? Function(bool? noResult, Object?)> callbacks = {};
+  int callBackIndex = 0;
+  Map<int, List<Future<Object?> Function(bool? noResult, Object?)>> callBacks =
+      {};
 
-  _$AppDatabaseBatchWrapper(this.appdb, this.batch);
+  _$AppDatabaseBatchWrapper(this.appdb, this.executor, this.batch);
+
+  void _addCallBack(
+    int index,
+    Future<Object?> Function(bool? noResult, Object?) callback,
+  ) {
+    var callBackList = callBacks[index];
+    if (callBackList == null) {
+      callBackList = [];
+      callBacks[index] = callBackList;
+    }
+    callBackList.add(callback);
+  }
+
+  Future<List<Object?>> _execCallBacks(
+    List<Object?> result,
+    bool? noResult,
+  ) async {
+    for (final index in callBacks.keys) {
+      Object? object;
+      if (index < result.length) {
+        object = result[index];
+      }
+      final callbackList = callBacks[index];
+      if (callbackList == null) {
+        continue;
+      }
+      for (final callback in callbackList) {
+        object = await callback(noResult, object);
+      }
+      if (index < result.length) {
+        result[index] = object;
+      }
+    }
+    return result;
+  }
 
   @override
   Future<List<Object?>> commit({
@@ -158,20 +200,9 @@ class _$AppDatabaseBatchWrapper implements Batch {
     );
 
     result = result.toList(); // read only list to writable list
-    for (final index in callbacks.keys) {
-      Object? object;
-      if (index < result.length) {
-        object = result[index];
-      }
-      final callback = callbacks[index];
-      final ret = callback?.call(noResult, object);
-      if (index < result.length) {
-        result[index] = ret;
-      }
-    }
-
-    callbacks = {};
-    index = 0;
+    result = await _execCallBacks(result, noResult);
+    callBacks = {};
+    callBackIndex = 0;
 
     return result;
   }
@@ -184,20 +215,9 @@ class _$AppDatabaseBatchWrapper implements Batch {
     );
 
     result = result.toList(); // read only list to writable list
-    for (final index in callbacks.keys) {
-      Object? object;
-      if (index < result.length) {
-        object = result[index];
-      }
-      final callback = callbacks[index];
-      final ret = callback?.call(noResult, object);
-      if (index < result.length) {
-        result[index] = ret;
-      }
-    }
-
-    callbacks = {};
-    index = 0;
+    result = await _execCallBacks(result, noResult);
+    callBacks = {};
+    callBackIndex = 0;
 
     return result;
   }
@@ -210,13 +230,13 @@ class _$AppDatabaseBatchWrapper implements Batch {
   void rawInsert(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.rawInsert(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
@@ -225,7 +245,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     Map<String, Object?> values, {
     String? nullColumnHack,
     ConflictAlgorithm? conflictAlgorithm,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     batch.insert(
       table,
@@ -234,22 +254,22 @@ class _$AppDatabaseBatchWrapper implements Batch {
       conflictAlgorithm: conflictAlgorithm,
     );
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
   void rawUpdate(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.rawUpdate(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
@@ -259,7 +279,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String? where,
     List<Object?>? whereArgs,
     ConflictAlgorithm? conflictAlgorithm,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     batch.update(
       table,
@@ -269,22 +289,22 @@ class _$AppDatabaseBatchWrapper implements Batch {
       conflictAlgorithm: conflictAlgorithm,
     );
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
   void rawDelete(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.rawDelete(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
@@ -292,26 +312,26 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String table, {
     String? where,
     List<Object?>? whereArgs,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     batch.delete(table, where: where, whereArgs: whereArgs);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
   void execute(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.execute(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
@@ -326,7 +346,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String? orderBy,
     int? limit,
     int? offset,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     batch.query(
       table,
@@ -341,26 +361,26 @@ class _$AppDatabaseBatchWrapper implements Batch {
       offset: offset,
     );
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 
   @override
   void rawQuery(
     String sql, [
     List<Object?>? arguments,
-    Object? Function(bool? noResult, Object?)? onCommit,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     batch.rawQuery(sql, arguments);
     if (onCommit != null) {
-      callbacks[index] = onCommit;
+      _addCallBack(callBackIndex, onCommit);
     }
-    index++;
+    callBackIndex++;
   }
 }
 
-abstract class _$AppDatabase implements DatabaseExecutor {
+abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   int get schemaVersion => 1;
 
   @override
@@ -419,7 +439,7 @@ abstract class _$AppDatabase implements DatabaseExecutor {
   @override
   _$AppDatabaseBatchWrapper batch() {
     final batch = database.batch();
-    final wrapper = _$AppDatabaseBatchWrapper(this, batch);
+    final wrapper = _$AppDatabaseBatchWrapper(this, this, batch);
     return wrapper;
   }
 
