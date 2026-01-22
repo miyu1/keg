@@ -169,6 +169,9 @@ void main() async {
 
     final user4 = await appdb.getUser(id);
     expect(user4, isNull);
+
+    final user5 = User('Mike');
+    expect(appdb.deleteUser(user5), throwsArgumentError);
   });
 
   test('query User', () async {
