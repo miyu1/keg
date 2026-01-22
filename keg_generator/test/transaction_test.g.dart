@@ -22,9 +22,10 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
     String? orderBy,
     int? limit,
     int? offset,
+    List<String> dropKeys = const [],
   });
 
-  Future<User?> getUser(int id);
+  Future<User?> getUser(int id, {List<String> dropKeys = const []});
 
   Future<int> deleteUser(User item);
 }
@@ -56,17 +57,20 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
     String? orderBy,
     int? limit,
     int? offset,
+    List<String> dropKeys = const [],
   }) => appdb.userHelper.query(
     where: where,
     whereArgs: whereArgs,
     orderBy: orderBy,
     limit: limit,
     offset: offset,
+    dropKeys: dropKeys,
     db: this,
   );
 
   @override
-  Future<User?> getUser(int id) => appdb.userHelper.get(id, db: this);
+  Future<User?> getUser(int id, {List<String> dropKeys = const []}) =>
+      appdb.userHelper.get(id, dropKeys: dropKeys, db: this);
 
   @override
   Future<int> deleteUser(User item) => appdb.userHelper.delete(item, db: this);
@@ -282,6 +286,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String? orderBy,
     int? limit,
     int? offset,
+    List<String> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     appdb.userHelper.query(
@@ -290,6 +295,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
       orderBy: orderBy,
       limit: limit,
       offset: offset,
+      dropKeys: dropKeys,
       batch: this,
     );
     if (onCommit != null) {
@@ -298,16 +304,25 @@ class _$AppDatabaseBatchWrapper implements Batch {
   }
 
   void getUser(
-    int id, [
+    int id, {
+    List<String> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
-  ]) {
-    appdb.userHelper.get(id, batch: this);
+  }) {
+    appdb.userHelper.get(id, dropKeys: dropKeys, batch: this);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
   }
 
-  void deleteUser(User item) => appdb.userHelper.delete(item, batch: this);
+  void deleteUser(
+    User item, [
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
+  ]) {
+    appdb.userHelper.delete(item, batch: this);
+    if (onCommit != null) {
+      _addCallBack(callBackIndex - 1, onCommit);
+    }
+  }
 
   // pass through methods
   @override
@@ -473,7 +488,7 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   @override
   late Database database;
 
-  late final userHelper = _$UserHelper();
+  late final userHelper = _$UserHelper(this);
 
   Future<String> getPathToOpen();
 
@@ -528,17 +543,20 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
     String? orderBy,
     int? limit,
     int? offset,
+    List<String> dropKeys = const [],
   }) => userHelper.query(
     where: where,
     whereArgs: whereArgs,
     orderBy: orderBy,
     limit: limit,
     offset: offset,
+    dropKeys: dropKeys,
     db: this,
   );
 
   @override
-  Future<User?> getUser(int id) => userHelper.get(id, db: this);
+  Future<User?> getUser(int id, {List<String> dropKeys = const []}) =>
+      userHelper.get(id, dropKeys: dropKeys, db: this);
 
   @override
   Future<int> deleteUser(User item) => userHelper.delete(item, db: this);
@@ -702,6 +720,11 @@ class _$UserHelper {
     'name': "TEXT NOT NULL DEFAULT ''",
   };
   final columnList = ['id', 'name'];
+
+  _$AppDatabase appdb;
+
+  _$UserHelper(this.appdb);
+
   static final v1ColumnList = ['id', 'name'];
   final columnListByVersion = {1: v1ColumnList};
 
@@ -841,6 +864,7 @@ class _$UserHelper {
   Future<List<Map<String, Object?>>> convertReferences(
     List<Map<String, Object?>> mapList,
     _$AppDatabaseExecutor db,
+    List<String> dropKeys,
   ) async {
     var result = mapList;
     result = result.toList(); // convert to modifiable list
@@ -850,8 +874,20 @@ class _$UserHelper {
       var map = result[i];
       map = Map.from(map); // convert to modifiable map
       result[i] = map;
+
+      final id = map[column.id] as int;
+      print('User($id) $dropKeys');
+      for (final key in dropKeys) {
+        map.remove(key);
+      }
     }
     await batch.commit();
+
+    return result;
+  }
+
+  List<User> mapToObject(List<Map<String, Object?>> mapList) {
+    final result = mapList.map((map) => User.fromSqlMap(map)).toList();
     return result;
   }
 
@@ -861,13 +897,14 @@ class _$UserHelper {
     String? orderBy,
     int? limit,
     int? offset,
+    List<String> dropKeys = const [],
     _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
     assert((db != null) ^ (batch != null));
 
     if (db != null) {
-      var result = await db.query(
+      var queryResult = await db.query(
         tableName,
         where: where,
         whereArgs: whereArgs,
@@ -875,9 +912,10 @@ class _$UserHelper {
         limit: limit,
         offset: offset,
       );
-      result = await convertReferences(result, db);
+      queryResult = await convertReferences(queryResult, db, dropKeys);
 
-      return result.map((entry) => User.fromSqlMap(entry)).toList();
+      final result = mapToObject(queryResult);
+      return result;
     } else if (batch != null) {
       batch.query(
         tableName,
@@ -890,8 +928,13 @@ class _$UserHelper {
           if (noResult == true || object is! List<Map<String, Object?>>) {
             throw StateError('returned object $object is not expected type.');
           }
-          var result = await convertReferences(object, batch.executor);
-          return result.map((entry) => User.fromSqlMap(entry)).toList();
+          final queryResult = await convertReferences(
+            object,
+            batch.executor,
+            dropKeys,
+          );
+          final result = mapToObject(queryResult);
+          return result;
         },
       );
     }
@@ -900,6 +943,7 @@ class _$UserHelper {
 
   Future<User?> get(
     int id, {
+    List<String> dropKeys = const [],
     _$AppDatabaseExecutor? db,
     _$AppDatabaseBatchWrapper? batch,
   }) async {
@@ -909,6 +953,7 @@ class _$UserHelper {
       final result = await query(
         where: '${column.id} = ?',
         whereArgs: [id],
+        dropKeys: dropKeys,
         db: db,
       );
 
@@ -932,9 +977,14 @@ class _$UserHelper {
             return null;
           }
 
-          var result = await convertReferences(object, batch.executor);
+          final queryResult = await convertReferences(
+            object,
+            batch.executor,
+            dropKeys,
+          );
+          final result = mapToObject(queryResult);
           assert(result.length == 1);
-          return User.fromSqlMap(result[0]);
+          return result[0];
         },
       );
     }

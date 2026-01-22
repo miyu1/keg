@@ -11,7 +11,10 @@ class Category {
   int id;
   String name;
 
-  Category(this.name, {this.id = 0});
+  @BackLink(to: "category", order: "name")
+  List<Item> itemList;
+
+  Category(this.name, {this.id = 0, this.itemList = const []});
 
   Map<String, Object?> toSqlMap() => _$CategoryHelper.toSqlMap(this);
   factory Category.fromSqlMap(Map<String, Object?> map) =>
@@ -24,6 +27,7 @@ class Item {
   String name;
 
   Category? category;
+  Category? subCategory;
 
   Item(this.name, {this.category, this.id = 0});
 
@@ -107,7 +111,14 @@ void main() async {
     expect(item2?.category?.id, cat.id);
     expect(item2?.category?.name, cat.name);
 
-    final cat2 = Category('stationary');
+    final cat3 = await appdb.getCategory(cat.id);
+    expect(cat3, isNotNull);
+    expect(cat3?.itemList.length, 1);
+    expect(cat3?.itemList[0].id, item1.id);
+    expect(cat3?.itemList[0].name, item1.name);
+    expect(cat.itemList, isEmpty);
+
+    final cat2 = Category('stationery');
     item2?.category = cat2;
     await appdb.registerCategory(cat2);
     await appdb.registerItem(item2!);
@@ -139,6 +150,11 @@ void main() async {
       expect(item2?.category, isNotNull);
       expect(item2?.category?.id, cat.id);
       expect(item2?.category?.name, cat.name);
+
+      final cat2 = await txn.getCategory(cat.id);
+      expect(cat2, isNotNull);
+      expect(cat2?.itemList.length, 1);
+      expect(cat2?.itemList[0].name, item1.name);
     });
 
     await appdb.transaction((txn) async {
@@ -159,15 +175,21 @@ void main() async {
 
     final batch2 = appdb.batch();
     batch2.getItem(item1.id);
+    batch2.getCategory(cat.id);
     final result1 = await batch2.commit();
 
-    expect(result1.length, 1);
+    expect(result1.length, 2);
     final item2 = result1[0] as Item?;
     expect(item2, isNotNull);
     expect(item2?.name, item1.name);
     expect(item2?.category, isNotNull);
     expect(item2?.category?.id, cat.id);
     expect(item2?.category?.name, cat.name);
+
+    final cat2 = result1[1] as Category?;
+    expect(cat2, isNotNull);
+    expect(cat2?.itemList.length, 1);
+    expect(cat2?.itemList[0].name, item1.name);
 
     final batch3 = appdb.batch();
     batch3.deleteItem(item1);
@@ -186,6 +208,89 @@ void main() async {
 
   });  
 
+  test('multi records', () async {
+    final cat1 = Category('stationery');
+    final cat2 = Category('pen');
+    final cat3 = Category('mobile');
+
+    await appdb.registerCategory(cat1);
+    await appdb.registerCategory(cat2);
+    await appdb.registerCategory(cat3);
+
+    final item1 = Item('ballpoint pen', category: cat1);
+    item1.subCategory = cat2;
+    final item2 = Item('pencil', category: cat1);
+    item2.subCategory = cat2;
+    final item3 = Item('notebook', category: cat1);
+    final item4 = Item('phone', category: cat3);
+    final item5 = Item('tablet', category: cat3);
+
+    await appdb.registerItem(item1);
+    await appdb.registerItem(item2);
+    await appdb.registerItem(item3);
+    await appdb.registerItem(item4);
+    await appdb.registerItem(item5);
+
+    final cat11 = await appdb.getCategory(cat1.id);
+    expect(cat11, isNotNull);
+    expect(cat11?.itemList.length, 3);
+    expect(cat11?.itemList[0].name, item1.name);
+    expect(cat11?.itemList[1].name, item3.name);
+    expect(cat11?.itemList[2].name, item2.name);
+
+    final cat21 = await appdb.getCategory(cat2.id);
+    expect(cat21, isNotNull);
+    expect(cat21?.itemList.length, 0);
+
+    final cat31 = await appdb.getCategory(cat3.id);
+    expect(cat31, isNotNull);
+    expect(cat31?.itemList.length, 2);
+    expect(cat31?.itemList[0].name, item4.name);
+    expect(cat31?.itemList[1].name, item5.name);
+
+    final item11 = await appdb.getItem(item1.id);
+    expect(item11, isNotNull);
+    expect(item11?.category, isNotNull);
+    expect(item11?.category?.name, cat1.name);
+    expect(item11?.subCategory, isNotNull);
+    expect(item11?.subCategory?.name, cat2.name);
+
+    final item21 = await appdb.getItem(item2.id);
+    expect(item21, isNotNull);
+    expect(item21?.category, isNotNull);
+    expect(item21?.category?.name, cat1.name);
+    expect(item21?.subCategory, isNotNull);
+    expect(item21?.subCategory?.name, cat2.name);
+
+    final item31 = await appdb.getItem(item3.id);
+    expect(item31, isNotNull);
+    expect(item31?.category, isNotNull);
+    expect(item31?.category?.name, cat1.name);
+    expect(item31?.subCategory, isNull);
+
+    final item41 = await appdb.getItem(item4.id);
+    expect(item41, isNotNull);
+    expect(item41?.category, isNotNull);
+    expect(item41?.category?.name, cat3.name);
+    expect(item41?.subCategory, isNull);
+
+    final item51 = await appdb.getItem(item5.id);
+    expect(item51, isNotNull);
+    expect(item51?.category, isNotNull);
+    expect(item51?.category?.name, cat3.name);
+    expect(item51?.subCategory, isNull);
+
+    final batch = appdb.batch();
+    batch.deleteItem(item1);
+    batch.deleteItem(item2);
+    batch.deleteItem(item3);
+    batch.deleteItem(item4);
+    batch.deleteItem(item5);
+    batch.deleteCategory(cat1);
+    batch.deleteCategory(cat2);
+    batch.deleteCategory(cat3);
+    await batch.commit(noResult: true);
+  });
   /*
   test('join', () async {
     final cat = Category('pen');

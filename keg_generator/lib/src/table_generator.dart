@@ -1,6 +1,7 @@
-import 'package:analyzer/dart/ast/visitor.dart';
-import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/type.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
 
@@ -46,6 +47,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     final oldColumnList = <String>[];
     if (schemaVersion > 1) {
+      // read previously generated helper class
       final library = await buildStep.inputLibrary;
       final helperElement = library.getClass('_\$${className}Helper');
       if (helperElement != null) {
@@ -77,9 +79,12 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     var columnTypes = '{'; // map
 
     for (final field in _fieldMap.values) {
-      if (field.type == _DataType.dtUnknown) {
-        final msg =
-            '$className: field ${field.name} has undetermined type';
+      if (field.type == .dtBackLink) {
+        continue;
+      }
+
+      if (field.type == .dtUnknown) {
+        final msg = '$className: field ${field.name} undetermined type';
         throw InvalidGenerationSourceError(msg);
       }
       columnRecord += "${field.name}:'${field.columnName}', ";
@@ -98,8 +103,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         _ => '',
       };
       if (dbTypeStr.isEmpty) {
-        final msg =
-            "$className: field '${field.name}' is unsupported type";
+        final msg = "$className: field '${field.name}' is unsupported type";
         throw InvalidGenerationSourceError(msg);
       }
 
@@ -131,7 +135,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     columnList += ']';
     columnTypes += '}';
 
-    fullColumnList = oldColumnList.map((e) => "'$e', ",).join() + fullColumnList;
+    fullColumnList = oldColumnList.map((e) => "'$e', ").join() + fullColumnList;
     fullColumnList = '[$fullColumnList]';
 
     final lines = <String>[
@@ -139,7 +143,14 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '  final String tableName = \'$tableName\';',
       '  final column = $columnRecord;',
       '  final columnTypes = $columnTypes;',
-      '  final columnList = $fullColumnList;'
+      '  final columnList = $fullColumnList;',
+      '',
+      '  _\$$appDbName appdb;',
+      //'  Map<int, Map<String, Object?>> cachedMap = {}; // to prevent eternal loop'
+      //'  Map<int, $className> cachedObjects = {};'
+      '',
+      '  _\$${className}Helper(this.appdb);',
+      '',
     ];
 
     var columnListByVersion = '';
@@ -241,6 +252,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     ];
 
     for (final field in _fieldMap.values) {
+      if (field.type == .dtBackLink) {
+        continue;
+      }
+
       var valueStr = 'item.${field.name}';
       if (field.type == _DataType.dtBool) {
         valueStr = 'item.${field.name} ? 1 : 0';
@@ -249,24 +264,24 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       } else if (field.type == _DataType.dtEnum) {
         valueStr = 'item.${field.name}.name';
       } else if (field.type == .dtReference) {
-        valueStr = 'item.${field.name}?.id';
+        valueStr = 'item.${field.name}!.id';
       }
 
       if (field.name == 'id') {
         lines.addAll([
           'if (item.id != 0) {',
           '  values["${field.columnName}"] = $valueStr;',
-          '}'
+          '}',
         ]);
       } else if (field.type == .dtReference) {
         lines.addAll([
-          'final ${field.name}Id = $valueStr;',
-          'if (${field.name}Id != null) {'
+          'if (item.${field.name} != null) {'
+              'final ${field.name}Id = $valueStr;',
           'if (${field.name}Id != 0) {',
           '  values["${field.columnName}"] = ${field.name}Id;',
           '} else {',
           "  throw StateError('$className.${field.name}.id is 0.');"
-          '}',
+              '}',
           '}',
         ]);
       } else {
@@ -301,7 +316,11 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         lines.add('final ${field.name} =');
       } else if (field.constructType == .optional) {
         if (field.type == .dtReference) {
-          lines.add('${field.className} ${field.name};');
+          lines.add('${field.className}? ${field.name};');
+        } else if (field.type == .dtBackLink) {
+          lines.add(
+            'List<${field.className}> ${field.name} = ${field.defaultValue};',
+          );
         } else {
           lines.add('var ${field.name} = ${field.defaultValue};');
         }
@@ -309,7 +328,11 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         lines.add('${field.name} =');
       } else if (field.constructType == .notIncluded) {
         lines.add("if (keys.contains('${field.columnName}')) {");
-        lines.add("params['${field.name}'] = ");
+        if (field.type == .dtReference) {
+          lines.add('${field.className}? ${field.name} =');
+        } else {
+          lines.add("params['${field.name}'] = ");
+        }
       }
       if (field.type == .dtUnknown) {
         throw InvalidGenerationSourceError(
@@ -326,7 +349,20 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           "${field.className}.values.byName(map['${field.columnName}'] as String);",
         );
       } else if (field.type == .dtReference) {
-        lines.add("map['${field.columnName}'] as ${field.className};");
+        var typeName = '${field.className}?';
+        // if (field.constructType == .optional) {
+        //  typeName = '$typeName?';
+        //}
+        lines.add("map['${field.columnName}'] as $typeName;");
+        if (field.constructType == .notIncluded) {
+          lines.addAll([
+            'if (${field.name} != null) {',
+            "params['${field.name}'] = ${field.name};",
+            '}',
+          ]);
+        }
+      } else if (field.type == .dtBackLink) {
+        lines.add("map['${field.columnName}'] as List<${field.className}>;");
       } else {
         lines.add("map['${field.columnName}'] as ${field.type.dartType};");
       }
@@ -369,10 +405,13 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     for (final field in _fieldMap.values.where(
       (field) => field.constructType == .notIncluded,
     )) {
-      lines.add("if (params.containsKey('${field.name}')) {");
+      lines.add("if (params['${field.name}'] != null) {");
       var type = field.type.dartType;
-      if (field.type == .dtEnum) {
+      if (type.isEmpty) {
         type = field.className;
+      }
+      if (field.type == .dtBackLink) {
+        type = 'List<${field.className}>';
       }
       lines.add("item.${field.name} = params['${field.name}'] as $type;");
       lines.add('}');
@@ -425,12 +464,13 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     ];
 
     // convert reference
-    final referenes = _fieldMap.values.where(
-      (field) => field.type == .dtReference,
-    );
+    //final referenes = _fieldMap.values.where(
+    //  (field) => field.type == .dtReference,
+    //);
     lines.addAll([
       'Future<List<Map<String, Object?>>> convertReferences(',
-      'List<Map<String, Object?>> mapList, _\$${appDbName}Executor db) async {',
+      'List<Map<String, Object?>> mapList, _\$${appDbName}Executor db,',
+      ' List<String> dropKeys) async {',
       '  var result = mapList;',
       '  result = result.toList(); // convert to modifiable list',
       '  final batch = db.batch();',
@@ -438,34 +478,113 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       'for (var i = 0; i < result.length; i++) {',
       ' var map = result[i];',
       '  map = Map.from(map); // convert to modifiable map',
-      '  result[i] = map;'
+      '  result[i] = map;',
+      '',
+      '  final id = map[column.id] as int;',
+      "  print('$className(\$id) \$dropKeys');"
+          'for (final key in dropKeys) {',
+      '  map.remove(key);',
+      '}',
+
+      //'  cachedMap[id] = map;'
     ]);
 
-    for (final field in referenes) {
-      var className = field.className;
-      if (className.endsWith('?')) {
-        className = className.substring(0, className.length - 1);
+    for (final field in _fieldMap.values) {
+      if (field.type == .dtReference) {
+        var className = field.className;
+        if (className.endsWith('?')) {
+          className = className.substring(0, className.length - 1);
+        }
+        var varName = toLowerCamelCase(className);
+        varName = '${varName}Helper';
+
+        lines.addAll([
+          "final ${field.name}Id = map['${field.columnName}'] as int?;",
+          "if (${field.name}Id != null) {",
+          //'  final cachedValue = appdb.$varName.cachedMap[${field.name}Id];'
+          //'  if (cachedValue != null) {',
+          //"  map['${field.columnName}'] = $className.fromSqlMap(cachedValue);",
+          //'  } else {',
+          '  batch.get$className(${field.name}Id, onCommit: (noResult, object) async {',
+          "    map['${field.columnName}'] = object;",
+          '    return object;',
+          '});',
+          //'}',
+          //"  map['${field.columnName}'] = await db.get$className(${field.name}Id);",
+          '}',
+        ]);
+      } else if (field.type == .dtBackLink) {
+        var varName = toLowerCamelCase(field.className);
+        varName = '${varName}Helper';
+        final backLink = field.annotationObject as BackLink;
+        var asc = 'ASC';
+        if (backLink.descendant) {
+          asc = 'DESC';
+        }
+
+        lines.addAll([
+          //'  final id = map[column.id] as int;',
+          'batch.query${field.className}(',
+          "where:'\${appdb.$varName.column.${backLink.to}} = ?',",
+          'whereArgs: [id],',
+          "orderBy: '\${appdb.$varName.column.${backLink.order}} $asc',",
+          'dropKeys: [appdb.$varName.column.${backLink.to}],'
+              'onCommit: (noResult, object) async {',
+          'if(noResult == true || object is! List<${field.className}>) {',
+          "  throw StateError('returned object \$object is not expected type.');",
+          '}',
+          //'for (final otherMap in object) {',
+          //' otherMap[\${appdb.$varName.column.${backLink.to}] = this;',
+          //'}'
+          "map['${field.columnName}'] = object;",
+          '  return object;',
+          '}',
+          ');',
+          '',
+        ]);
       }
-      lines.addAll([
-        "final ${field.name}Id = map['${field.columnName}'] as int?;",
-        'if (${field.name}Id != null) {',
-        'batch.get$className(${field.name}Id, (noResult, object) async {',
-        "  map['${field.columnName}'] = object;",
-        '  return object;'
-        '});',
-        //"  map['${field.columnName}'] = await db.get$className(${field.name}Id);",
-        '}',
-      ]);
     }
     lines.addAll([
-      //'result[i] = map;',
-       '}', // end for
-       'await batch.commit();'
+      '}', // end for
+      'await batch.commit();',
+      '',
+      //'for (final map in result) {',
+      //'  final id = map[column.id] as int;',
+      //'  cachedMap[id] = map;'
+      //'}'
       '',
       'return result;',
-      '}' // end function
+      '}', // end function
+      ''
     ]);
 
+    // mapToObject
+    lines.addAll([
+      'List<$className> mapToObject(List<Map<String, Object?>> mapList) {',
+      ' final result = mapList.map((map) => $className.fromSqlMap(map)).toList();'
+    ]);
+    final backLinkFields = _fieldMap.values.where(
+      (field) => field.type == .dtBackLink,
+    );
+    if (backLinkFields.isNotEmpty) {
+      lines.add('for (final object in result){');
+      for (final field in _fieldMap.values) {
+        if (field.type == .dtBackLink) {
+          final backLink = field.annotationObject as BackLink;
+          lines.addAll([
+            'for (final item in object.${field.name}) {',
+            'item.${backLink.to} = object;',
+            '}',
+          ]);
+        }
+      }
+      lines.add('}'); // end for
+    }
+    lines.addAll([
+      'return result;'
+      '}', // end func
+      ''
+    ]);
     // make query statement
     /*
     lines.addAll([
@@ -500,15 +619,17 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     lines.addAll([
       'Future<List<$className>> query({String? where, List<Object?>? whereArgs, ',
       '  String? orderBy, int? limit, int? offset,',
+      '  List<String> dropKeys = const [], ',
       '  _\$${appDbName}Executor? db, $batch batch}) async {',
       '  assert((db != null) ^ (batch != null));',
       '',
       'if (db != null) {',
-      "  var result = await db.query(tableName, where: where, whereArgs: whereArgs, ",
+      "  var queryResult = await db.query(tableName, where: where, whereArgs: whereArgs, ",
       '     orderBy: orderBy, limit: limit, offset: offset);',
-      '  result = await convertReferences(result, db);',
+      '  queryResult = await convertReferences(queryResult, db, dropKeys);',
       '',
-      '  return result.map((entry) => $className.fromSqlMap(entry)).toList();',
+      '  final result = mapToObject(queryResult);',
+      '  return result;',
       '} else if (batch != null) {',
       '  batch.query(tableName, where: where, whereArgs: whereArgs,',
       '  orderBy: orderBy, limit: limit, offset: offset,',
@@ -516,8 +637,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '    if(noResult == true || object is! List<Map<String, Object?>>) {',
       "      throw StateError('returned object \$object is not expected type.');",
       '    }',
-      '  var result = await convertReferences(object, batch.executor);',
-      '  return result.map((entry) => $className.fromSqlMap(entry)).toList();',
+      '    final queryResult = await convertReferences(object, batch.executor, dropKeys);',
+      '    final result = mapToObject(queryResult);'
+      '    return result;',
       '  },',
       ');',
       '}',
@@ -528,14 +650,16 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     // get
     lines.addAll([
-      'Future<$className?> get(int id, {_\$${appDbName}Executor? db, $batch batch}) async {',
+      'Future<$className?> get(int id, {',
+      'List<String> dropKeys = const [], _\$${appDbName}Executor? db, $batch batch}) async {',
       '  assert((db != null) ^ (batch != null));',
       '',
       '  if (db != null) {',
       '    final result = await query(',
       "       where: '\${column.id} = ?',",
       '       whereArgs: [id],',
-      '       db: db);',
+      '       dropKeys: dropKeys,'
+          '       db: db);',
       '',
       '    if (result.isEmpty) {',
       '      return null;',
@@ -554,9 +678,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '       return null;',
       '    }',
       '',
-      '    var result = await convertReferences(object, batch.executor);',
+      '    final queryResult = await convertReferences(object, batch.executor, dropKeys);',
+      '    final result = mapToObject(queryResult);',
       '    assert(result.length == 1);',
-      '    return $className.fromSqlMap(result[0]);',
+      '    return result[0];',
       '',
       '    },',
       ' );',
@@ -593,7 +718,6 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         continue;
       }
       if (field.isStatic) {
-        //fieldInfo.isStatic = true;
         continue;
       }
 
@@ -608,7 +732,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       fieldInfo.columnName = toSnakeCase(fieldInfo.name);
 
       var type = _DataType.dtUnknown;
-      final typeName = field.type.getDisplayString();
+      var typeName = field.type.getDisplayString();
       if (field.type.isDartCoreInt) {
         type = _DataType.dtInteger;
       } else if (field.type.isDartCoreDouble) {
@@ -626,15 +750,52 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       } else if (_annotatedWith(field.type.element, 'Table')) {
         if (field.type.nullabilitySuffix != .question) {
           final msg =
-              "${element.name}: field ${field.name} must be nullable type";
+              '${element.name}: field ${field.name} must be nullable type';
+          throw InvalidGenerationSourceError(msg);
+        }
+        if (typeName.endsWith('?')) {
+          typeName = typeName.substring(0, typeName.length - 1);
+        }
+        if (!tableNameList.contains(typeName)) {
+          final msg = '${element.name} is not included in $appDbName';
           throw InvalidGenerationSourceError(msg);
         }
         type = _DataType.dtReference;
         fieldInfo.className = typeName;
         fieldInfo.columnName += '_id';
+      } else if (_annotatedWith(field, 'BackLink')) {
+        fieldInfo.annotationObject = annotationObject;
+        if (!field.type.isDartCoreList) {
+          final msg =
+              '${element.name}: field ${field.name} is BackLink and it must be List';
+          throw InvalidGenerationSourceError(msg);
+        }
+        if (field.type is! ParameterizedType) {
+          final msg =
+              '${element.name}: field ${field.name} is BackLink and it must be generic List';
+          throw InvalidGenerationSourceError(msg);
+        }
+        final dartType = field.type as ParameterizedType;
+        if (dartType.typeArguments.isEmpty) {
+          final msg =
+              '${element.name}: field ${field.name} is BackLink but cannot get List type';
+          throw InvalidGenerationSourceError(msg);
+        }
+        if (!_annotatedWith(dartType.typeArguments[0].element, 'Table')) {
+          final msg =
+              '${element.name}: field ${field.name} is BackLink but it is not List of table class';
+          throw InvalidGenerationSourceError(msg);
+        }
+
+        typeName = dartType.typeArguments[0].getDisplayString();
+        if (!tableNameList.contains(typeName)) {
+          final msg = '$typeName is not included in $appDbName';
+          throw InvalidGenerationSourceError(msg);
+        }
+        type = _DataType.dtBackLink;
+        fieldInfo.className = typeName;
       } else {
-        final msg =
-            "${element.name}: field ${field.name} is unsupported type";
+        final msg = "${element.name}: field ${field.name} is unsupported type";
         throw InvalidGenerationSourceError(msg);
       }
       fieldInfo.type = type;
@@ -793,6 +954,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         .toLowerCase();
   }
 
+  Object? annotationObject;
   bool _annotatedWith(Element? field, String name) {
     bool found = false;
 
@@ -812,6 +974,16 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       if (annoElem.displayName.toLowerCase() == name.toLowerCase() &&
           library.identifier.startsWith('package:keg_annotation')) {
         found = true;
+        annotationObject = null;
+        if (annoElem.displayName == 'BackLink') {
+          final dartObject = annotation.computeConstantValue();
+          final to = dartObject?.getField('to')?.toStringValue();
+          final order = dartObject?.getField('order')?.toStringValue();
+          final desc = dartObject?.getField('descendant')?.toBoolValue();
+          if (to != null && order != null && desc != null) {
+            annotationObject = BackLink(to: to, order: order, descendant: desc);
+          }
+        }
         break;
       }
     }
@@ -834,7 +1006,8 @@ enum _DataType {
   dtBool(dartType: 'bool'),
   dtDateTime(dartType: 'DateTime'),
   dtEnum(dartType: ''),
-  dtReference(dartType: '');
+  dtReference(dartType: ''),
+  dtBackLink(dartType: '');
 
   const _DataType({required this.dartType});
 
@@ -851,10 +1024,11 @@ class _FieldInfo {
   String name = '';
   String columnName = '';
   _DataType type = .dtUnknown;
-  String className = ''; // for enum class
+  String className = ''; // for enum and ref
   String defaultValue = '';
   //bool isRequired = false;
   ConstructType constructType = .notIncluded;
+  Object? annotationObject;
 }
 
 class _StringListVisitor extends GeneralizingAstVisitor {

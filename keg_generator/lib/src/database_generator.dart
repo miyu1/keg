@@ -154,7 +154,7 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       if (tableName != null) {
         final variableName = toLowerCamelCase(tableName);
         buffer.writeln(
-          '  late final ${variableName}Helper = _\$${tableName}Helper();',
+          '  late final ${variableName}Helper = _\$${tableName}Helper(this);',
         );
       }
     }
@@ -245,13 +245,15 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       buffer.writeln('');
       buffer.writeln('@override Future<List<$table>> query$table({'
         'String? where, List<Object?>? whereArgs, '
-        '  String? orderBy, int? limit, int? offset, })');
+        '  String? orderBy, int? limit, int? offset,'
+        '  List<String> dropKeys = const [] })');
       buffer.writeln('=>  ${variableName}Helper.query('
         'where: where, whereArgs: whereArgs, orderBy: orderBy, '
-        'limit: limit, offset: offset, db: this);');
+        'limit: limit, offset: offset, dropKeys: dropKeys, db: this);');
       buffer.writeln('');
-      buffer.writeln('@override Future<$table?> get$table(int id)');
-      buffer.writeln('=> ${variableName}Helper.get(id, db: this);');
+      buffer.writeln('@override Future<$table?> get$table(int id, '
+      '{List<String> dropKeys = const[]})');
+      buffer.writeln('=> ${variableName}Helper.get(id, dropKeys: dropKeys, db: this);');
       buffer.writeln('');
       buffer.writeln('@override Future<int> delete$table($table item)');
       buffer.writeln('=> ${variableName}Helper.delete(item, db: this);');
@@ -321,9 +323,9 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       buffer.writeln('');
       buffer.writeln('Future<List<$table>> query$table({'
         'String? where, List<Object?>? whereArgs, '
-        '  String? orderBy, int? limit, int? offset, });');
+        '  String? orderBy, int? limit, int? offset, List<String> dropKeys = const []});');
       buffer.writeln('');
-      buffer.writeln('Future<$table?> get$table(int id);');
+      buffer.writeln('Future<$table?> get$table(int id, {List<String> dropKeys = const []});');
       buffer.writeln('');
       buffer.writeln('Future<int> delete$table($table item);');
       buffer.writeln('');
@@ -361,13 +363,14 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
         '',
         '@override Future<List<$table>> query$table({',
         'String? where, List<Object?>? whereArgs, ',
-        '  String? orderBy, int? limit, int? offset, })',
+        '  String? orderBy, int? limit, int? offset,',
+        '  List<String> dropKeys = const []})',
         '=>  appdb.${variableName}Helper.query(',
         'where: where, whereArgs: whereArgs, orderBy: orderBy, ',
-        'limit: limit, offset: offset, db: this);',
+        'limit: limit, offset: offset, dropKeys:dropKeys, db: this);',
         '',
-        '@override Future<$table?> get$table(int id)',
-        '=> appdb.${variableName}Helper.get(id, db: this);',
+        '@override Future<$table?> get$table(int id, {List<String> dropKeys = const []})',
+        '=> appdb.${variableName}Helper.get(id, dropKeys: dropKeys, db: this);',
         '',
         '@override Future<int> delete$table($table item)',
         '=> appdb.${variableName}Helper.delete(item, db: this);',
@@ -471,17 +474,18 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
         '',
         'void query$table({',
         'String? where, List<Object?>? whereArgs, ',
-        ' String? orderBy, int? limit, int? offset, $onCommitArg}) {',
+        ' String? orderBy, int? limit, int? offset,',
+        ' List<String> dropKeys = const [], $onCommitArg}) {',
         ' appdb.${variableName}Helper.query(',
         ' where: where, whereArgs: whereArgs, orderBy: orderBy, ',
-        '  limit: limit, offset: offset, batch: this);',
+        '  limit: limit, offset: offset, dropKeys: dropKeys, batch: this);',
         '  if (onCommit != null) {',
         '    _addCallBack(callBackIndex-1, onCommit);',
         '  }',
         '}'
         '',
-        'void get$table(int id, [$onCommitArg]) {',
-        ' appdb.${variableName}Helper.get(id, batch: this);',
+        'void get$table(int id, {List<String> dropKeys = const [], $onCommitArg}) {',
+        ' appdb.${variableName}Helper.get(id, dropKeys: dropKeys, batch: this);',
         '  if (onCommit != null) {',
         '    _addCallBack(callBackIndex-1, onCommit);',
         '  }',
