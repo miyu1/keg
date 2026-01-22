@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:keg_annotation/keg_annotation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -159,7 +160,7 @@ void main() async {
 
     // delete throws when id is 0
     final batch6 = appdb.batch();
-    expectLater(() => batch6.deleteUser(user2), throwsA(isA<AssertionError>()));
+    expect(() => batch6.deleteUser(user2), throwsArgumentError);
 
     // delete ends normally 2
     final result7 = await appdb.queryUser();

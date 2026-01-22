@@ -424,28 +424,31 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
   }
 
   List<String> _generateDataHandlers(String className, String appDbName) {
-    final batch = '_\$${appDbName}BatchWrapper?';
+    final batch = '_\$${appDbName}BatchWrapper';
 
     // register
-    var lines = <String>[
-      'Future<int> register($className item , {_\$${appDbName}Executor? db, $batch batch}) async {',
-      '  assert((db != null) ^ (batch != null));',
-      '',
-      '  final map = item.toSqlMap();',
-      "  var command = 'REPLACE INTO';",
-      '  if (item.id == 0) {',
-      "    command = 'INSERT INTO';",
-      '  }',
+    final registerCommon = [
+      'final map = item.toSqlMap();',
+      "var command = 'REPLACE INTO';",
+      'if (item.id == 0) {',
+      "  command = 'INSERT INTO';",
+      '}',
       "final sql = '\$command \$tableName (\${map.keys.join(',')}) VALUES (\${List.filled(map.length, '?').join(', ')})';",
       "// print('register sql: \$sql');",
       "// print('args: \${map.values.toList()}');",
+    ];
+    final registerCommand = 'rawInsert(sql, map.values.toList(),';
+    var lines = <String>[
+      'Future<int> register($className item , _\$${appDbName}Executor db) async {',
+      ...registerCommon,
+      'final id = await db.$registerCommand);',
+      'item.id = id;',
+      'return id;',
+      '}',
       '',
-      'if (db != null) {',
-      '  final id = await db.rawInsert(sql, map.values.toList());',
-      '  item.id = id;',
-      '  return id;',
-      '} else if (batch != null) {',
-      '  batch.rawInsert(sql, map.values.toList(), (noResult, object) async {',
+      'void registerBatch($className item, $batch batch) {',
+      ...registerCommon,
+      '  batch.$registerCommand (noResult, object) async {',
       '    if (item.id == 0) {',
       '      if (noResult != true && object is int) {',
       '        item.id = object;',
@@ -456,17 +459,12 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       // '      item.id = object;',
       '    }',
       '    return object;',
-      '  });'
-          '}',
-      'return -1;',
+      '  });',
       '}',
       '',
     ];
 
     // convert reference
-    //final referenes = _fieldMap.values.where(
-    //  (field) => field.type == .dtReference,
-    //);
     lines.addAll([
       'Future<List<Map<String, Object?>>> convertReferences(',
       'List<Map<String, Object?>> mapList, _\$${appDbName}Executor db,',
@@ -476,17 +474,15 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '  final batch = db.batch();',
       '',
       'for (var i = 0; i < result.length; i++) {',
-      ' var map = result[i];',
+      '  var map = result[i];',
       '  map = Map.from(map); // convert to modifiable map',
       '  result[i] = map;',
       '',
       '  final id = map[column.id] as int;',
-      "  print('$className(\$id) \$dropKeys');"
-          'for (final key in dropKeys) {',
+      "  print('$className(\$id) \$dropKeys');",
+      'for (final key in dropKeys) {',
       '  map.remove(key);',
       '}',
-
-      //'  cachedMap[id] = map;'
     ]);
 
     for (final field in _fieldMap.values) {
@@ -501,16 +497,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         lines.addAll([
           "final ${field.name}Id = map['${field.columnName}'] as int?;",
           "if (${field.name}Id != null) {",
-          //'  final cachedValue = appdb.$varName.cachedMap[${field.name}Id];'
-          //'  if (cachedValue != null) {',
-          //"  map['${field.columnName}'] = $className.fromSqlMap(cachedValue);",
-          //'  } else {',
           '  batch.get$className(${field.name}Id, onCommit: (noResult, object) async {',
           "    map['${field.columnName}'] = object;",
           '    return object;',
           '});',
-          //'}',
-          //"  map['${field.columnName}'] = await db.get$className(${field.name}Id);",
           '}',
         ]);
       } else if (field.type == .dtBackLink) {
@@ -533,9 +523,6 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           'if(noResult == true || object is! List<${field.className}>) {',
           "  throw StateError('returned object \$object is not expected type.');",
           '}',
-          //'for (final otherMap in object) {',
-          //' otherMap[\${appdb.$varName.column.${backLink.to}] = this;',
-          //'}'
           "map['${field.columnName}'] = object;",
           '  return object;',
           '}',
@@ -548,10 +535,6 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '}', // end for
       'await batch.commit();',
       '',
-      //'for (final map in result) {',
-      //'  final id = map[column.id] as int;',
-      //'  cachedMap[id] = map;'
-      //'}'
       '',
       'return result;',
       '}', // end function
@@ -616,42 +599,85 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     */
 
     // query
-    lines.addAll([
-      'Future<List<$className>> query({String? where, List<Object?>? whereArgs, ',
-      '  String? orderBy, int? limit, int? offset,',
-      '  List<String> dropKeys = const [], ',
-      '  _\$${appDbName}Executor? db, $batch batch}) async {',
-      '  assert((db != null) ^ (batch != null));',
-      '',
-      'if (db != null) {',
-      "  var queryResult = await db.query(tableName, where: where, whereArgs: whereArgs, ",
-      '     orderBy: orderBy, limit: limit, offset: offset);',
-      '  queryResult = await convertReferences(queryResult, db, dropKeys);',
+    final queryCommon = [
       '',
       '  final result = mapToObject(queryResult);',
       '  return result;',
-      '} else if (batch != null) {',
-      '  batch.query(tableName, where: where, whereArgs: whereArgs,',
-      '  orderBy: orderBy, limit: limit, offset: offset,',
+    ];
+    final queryCommand = 'query(tableName, where: where, whereArgs: whereArgs, orderBy: orderBy, limit: limit, offset: offset,';
+    lines.addAll([
+      'Future<List<$className>> query(_\$${appDbName}Executor db, '
+      '  {String? where, List<Object?>? whereArgs, ',
+      '  String? orderBy, int? limit, int? offset,',
+      '  List<String> dropKeys = const [], ',
+      '  }) async {',
+      '',
+      '  var queryResult = await db.$queryCommand);',
+      '  queryResult = await convertReferences(queryResult, db, dropKeys);',
+      ...queryCommon,
+      '}',
+      '',
+      'void queryBatch($batch batch, ',
+      '{String? where, List<Object?>? whereArgs, ',
+      '  String? orderBy, int? limit, int? offset,',
+      '  List<String> dropKeys = const [], ',
+      '  }) {',
+      '  batch.$queryCommand',
       '  onCommit: (noResult, object) async {',
       '    if(noResult == true || object is! List<Map<String, Object?>>) {',
       "      throw StateError('returned object \$object is not expected type.');",
       '    }',
-      '    final queryResult = await convertReferences(object, batch.executor, dropKeys);',
-      '    final result = mapToObject(queryResult);'
-      '    return result;',
+      '    var queryResult = await convertReferences(object, batch.executor, dropKeys);',
+      ...queryCommon,
       '  },',
       ');',
-      '}',
-      '  return [];',
       '}',
       '',
     ]);
 
     // get
     lines.addAll([
+      'Future<$className?> get(int id, _\$${appDbName}Executor db, [',
+      'List<String> dropKeys = const []]) async {',
+      '  final result = await query(db, ',
+      "    where: '\${column.id} = ?',",
+      '    whereArgs: [id],',
+      '    dropKeys: dropKeys);',
+      '',
+      '  if (result.isEmpty) {',
+      '    return null;',
+      '  }',
+      '',
+      '  assert(result.length == 1);',
+      '  return result[0];',
+      '}',
+      '',
+      'void getBatch(int id, $batch batch, [',
+      '  List<String> dropKeys = const []]) {',
+      "  batch.query(tableName, where: '\${column.id} = ?', whereArgs: [id],",
+      '    onCommit: (noResult, object) async {',
+      '    if(noResult == true || object is! List<Map<String, Object?>>) {',
+      "      throw StateError('returned object \$object is not expected type.');",
+      '    }',
+      '',
+      '    if (object.isEmpty) {',
+      '       return null;',
+      '    }',
+      '',
+      '    final queryResult = await convertReferences(object, batch.executor, dropKeys);',
+      '    final result = mapToObject(queryResult);',
+      '    assert(result.length == 1);',
+      '    return result[0];',
+      '',
+      '    },',
+      ' );',
+      '}',
+      '',
+    ]);
+    /*
+    lines.addAll([
       'Future<$className?> get(int id, {',
-      'List<String> dropKeys = const [], _\$${appDbName}Executor? db, $batch batch}) async {',
+      'List<String> dropKeys = const [], _\$${appDbName}Executor? db, $batch? batch}) async {',
       '  assert((db != null) ^ (batch != null));',
       '',
       '  if (db != null) {',
@@ -690,22 +716,48 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '}',
       '',
     ]);
+    */
 
     // delete
+    final deleteCommon = [
+      'if (item.id == 0) {',
+      "  throw ArgumentError('Cannot delete $className with id 0.');",
+      '}',
+    ];
+    final deleteCmd = "delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);";
+    lines.addAll([
+      'Future<int> delete($className item , _\$${appDbName}Executor db) async {',
+      ...deleteCommon,
+      '',
+      'final id = await db.$deleteCmd',
+      'return id;',
+      '}',
+      '',
+      'void deleteBatch($className item , $batch batch) {',
+      ...deleteCommon,
+      '',
+      'batch.$deleteCmd',
+      '}',
+      '',
+    ]);
+    /*
     lines.addAll([
       'Future<int> delete($className item , {_\$${appDbName}Executor? db, $batch batch}) async {',
       '  assert((db != null) ^ (batch != null));',
-      '  assert(item.id != 0);',
+      'if (item.id == 0) {',
+      "throw ArgumentError('Cannot delete User with id 0.');",
+      '}',
       '',
       ' if (db != null) {',
       "    final id = await db.delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);",
-      '    return id;'
-          ' } else if (batch != null) {',
+      '    return id;',
+      ' } else if (batch != null) {',
       "    batch.delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);"
           ' }',
       ' return -1;'
           '}',
     ]);
+    */
     return lines;
   }
 

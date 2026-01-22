@@ -25,7 +25,7 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
     List<String> dropKeys = const [],
   });
 
-  Future<User?> getUser(int id, {List<String> dropKeys = const []});
+  Future<User?> getUser(int id, [List<String> dropKeys = const []]);
 
   Future<int> deleteUser(User item);
 
@@ -44,7 +44,7 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
     List<String> dropKeys = const [],
   });
 
-  Future<ItemInfo?> getItemInfo(int id, {List<String> dropKeys = const []});
+  Future<ItemInfo?> getItemInfo(int id, [List<String> dropKeys = const []]);
 
   Future<int> deleteItemInfo(ItemInfo item);
 }
@@ -66,8 +66,7 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   }
 
   @override
-  Future<int> registerUser(User item) =>
-      appdb.userHelper.register(item, db: this);
+  Future<int> registerUser(User item) => appdb.userHelper.register(item, this);
 
   @override
   Future<List<User>> queryUser({
@@ -78,25 +77,25 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
     int? offset,
     List<String> dropKeys = const [],
   }) => appdb.userHelper.query(
+    this,
     where: where,
     whereArgs: whereArgs,
     orderBy: orderBy,
     limit: limit,
     offset: offset,
     dropKeys: dropKeys,
-    db: this,
   );
 
   @override
-  Future<User?> getUser(int id, {List<String> dropKeys = const []}) =>
-      appdb.userHelper.get(id, dropKeys: dropKeys, db: this);
+  Future<User?> getUser(int id, [List<String> dropKeys = const []]) =>
+      appdb.userHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteUser(User item) => appdb.userHelper.delete(item, db: this);
+  Future<int> deleteUser(User item) => appdb.userHelper.delete(item, this);
 
   @override
   Future<int> registerItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.register(item, db: this);
+      appdb.itemInfoHelper.register(item, this);
 
   @override
   Future<List<ItemInfo>> queryItemInfo({
@@ -107,22 +106,22 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
     int? offset,
     List<String> dropKeys = const [],
   }) => appdb.itemInfoHelper.query(
+    this,
     where: where,
     whereArgs: whereArgs,
     orderBy: orderBy,
     limit: limit,
     offset: offset,
     dropKeys: dropKeys,
-    db: this,
   );
 
   @override
-  Future<ItemInfo?> getItemInfo(int id, {List<String> dropKeys = const []}) =>
-      appdb.itemInfoHelper.get(id, dropKeys: dropKeys, db: this);
+  Future<ItemInfo?> getItemInfo(int id, [List<String> dropKeys = const []]) =>
+      appdb.itemInfoHelper.get(id, this, dropKeys);
 
   @override
   Future<int> deleteItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.delete(item, db: this);
+      appdb.itemInfoHelper.delete(item, this);
 
   // passthrough methods
   @override
@@ -323,7 +322,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     User item, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.userHelper.register(item, batch: this);
+    appdb.userHelper.registerBatch(item, this);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -338,14 +337,14 @@ class _$AppDatabaseBatchWrapper implements Batch {
     List<String> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.userHelper.query(
+    appdb.userHelper.queryBatch(
+      this,
       where: where,
       whereArgs: whereArgs,
       orderBy: orderBy,
       limit: limit,
       offset: offset,
       dropKeys: dropKeys,
-      batch: this,
     );
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
@@ -357,7 +356,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     List<String> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.userHelper.get(id, dropKeys: dropKeys, batch: this);
+    appdb.userHelper.getBatch(id, this, dropKeys);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -367,7 +366,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     User item, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.userHelper.delete(item, batch: this);
+    appdb.userHelper.deleteBatch(item, this);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -377,7 +376,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     ItemInfo item, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.itemInfoHelper.register(item, batch: this);
+    appdb.itemInfoHelper.registerBatch(item, this);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -392,14 +391,14 @@ class _$AppDatabaseBatchWrapper implements Batch {
     List<String> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.itemInfoHelper.query(
+    appdb.itemInfoHelper.queryBatch(
+      this,
       where: where,
       whereArgs: whereArgs,
       orderBy: orderBy,
       limit: limit,
       offset: offset,
       dropKeys: dropKeys,
-      batch: this,
     );
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
@@ -411,7 +410,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     List<String> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.itemInfoHelper.get(id, dropKeys: dropKeys, batch: this);
+    appdb.itemInfoHelper.getBatch(id, this, dropKeys);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -421,7 +420,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     ItemInfo item, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.itemInfoHelper.delete(item, batch: this);
+    appdb.itemInfoHelper.deleteBatch(item, this);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -640,7 +639,7 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   /// If specified id already exists in table, update the record.
   /// If specified id does not exist in table, insert with the id.
   @override
-  Future<int> registerUser(User item) => userHelper.register(item, db: this);
+  Future<int> registerUser(User item) => userHelper.register(item, this);
 
   @override
   Future<List<User>> queryUser({
@@ -651,21 +650,21 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
     int? offset,
     List<String> dropKeys = const [],
   }) => userHelper.query(
+    this,
     where: where,
     whereArgs: whereArgs,
     orderBy: orderBy,
     limit: limit,
     offset: offset,
     dropKeys: dropKeys,
-    db: this,
   );
 
   @override
-  Future<User?> getUser(int id, {List<String> dropKeys = const []}) =>
-      userHelper.get(id, dropKeys: dropKeys, db: this);
+  Future<User?> getUser(int id, [List<String> dropKeys = const []]) =>
+      userHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteUser(User item) => userHelper.delete(item, db: this);
+  Future<int> deleteUser(User item) => userHelper.delete(item, this);
 
   /// Insert or update ItemInfo.
   /// If id is 0, insert and sets id to generated value.
@@ -673,7 +672,7 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   /// If specified id does not exist in table, insert with the id.
   @override
   Future<int> registerItemInfo(ItemInfo item) =>
-      itemInfoHelper.register(item, db: this);
+      itemInfoHelper.register(item, this);
 
   @override
   Future<List<ItemInfo>> queryItemInfo({
@@ -684,22 +683,22 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
     int? offset,
     List<String> dropKeys = const [],
   }) => itemInfoHelper.query(
+    this,
     where: where,
     whereArgs: whereArgs,
     orderBy: orderBy,
     limit: limit,
     offset: offset,
     dropKeys: dropKeys,
-    db: this,
   );
 
   @override
-  Future<ItemInfo?> getItemInfo(int id, {List<String> dropKeys = const []}) =>
-      itemInfoHelper.get(id, dropKeys: dropKeys, db: this);
+  Future<ItemInfo?> getItemInfo(int id, [List<String> dropKeys = const []]) =>
+      itemInfoHelper.get(id, this, dropKeys);
 
   @override
   Future<int> deleteItemInfo(ItemInfo item) =>
-      itemInfoHelper.delete(item, db: this);
+      itemInfoHelper.delete(item, this);
 
   Future<T> transaction<T>(
     Future<T> Function(_$AppDatabaseTransactionWrapper txn) action, {
@@ -967,13 +966,7 @@ class _$UserHelper {
     return item;
   }
 
-  Future<int> register(
-    User item, {
-    _$AppDatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-
+  Future<int> register(User item, _$AppDatabaseExecutor db) async {
     final map = item.toSqlMap();
     var command = 'REPLACE INTO';
     if (item.id == 0) {
@@ -983,22 +976,29 @@ class _$UserHelper {
         '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
+    final id = await db.rawInsert(sql, map.values.toList());
+    item.id = id;
+    return id;
+  }
 
-    if (db != null) {
-      final id = await db.rawInsert(sql, map.values.toList());
-      item.id = id;
-      return id;
-    } else if (batch != null) {
-      batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
-        if (item.id == 0) {
-          if (noResult != true && object is int) {
-            item.id = object;
-          }
-        }
-        return object;
-      });
+  void registerBatch(User item, _$AppDatabaseBatchWrapper batch) {
+    final map = item.toSqlMap();
+    var command = 'REPLACE INTO';
+    if (item.id == 0) {
+      command = 'INSERT INTO';
     }
-    return -1;
+    final sql =
+        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+    // print('register sql: $sql');
+    // print('args: ${map.values.toList()}');
+    batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
+      if (item.id == 0) {
+        if (noResult != true && object is int) {
+          item.id = object;
+        }
+      }
+      return object;
+    });
   }
 
   Future<List<Map<String, Object?>>> convertReferences(
@@ -1031,125 +1031,130 @@ class _$UserHelper {
     return result;
   }
 
-  Future<List<User>> query({
+  Future<List<User>> query(
+    _$AppDatabaseExecutor db, {
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
     int? limit,
     int? offset,
     List<String> dropKeys = const [],
-    _$AppDatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
   }) async {
-    assert((db != null) ^ (batch != null));
+    var queryResult = await db.query(
+      tableName,
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+      offset: offset,
+    );
+    queryResult = await convertReferences(queryResult, db, dropKeys);
 
-    if (db != null) {
-      var queryResult = await db.query(
-        tableName,
-        where: where,
-        whereArgs: whereArgs,
-        orderBy: orderBy,
-        limit: limit,
-        offset: offset,
-      );
-      queryResult = await convertReferences(queryResult, db, dropKeys);
+    final result = mapToObject(queryResult);
+    return result;
+  }
 
-      final result = mapToObject(queryResult);
-      return result;
-    } else if (batch != null) {
-      batch.query(
-        tableName,
-        where: where,
-        whereArgs: whereArgs,
-        orderBy: orderBy,
-        limit: limit,
-        offset: offset,
-        onCommit: (noResult, object) async {
-          if (noResult == true || object is! List<Map<String, Object?>>) {
-            throw StateError('returned object $object is not expected type.');
-          }
-          final queryResult = await convertReferences(
-            object,
-            batch.executor,
-            dropKeys,
-          );
-          final result = mapToObject(queryResult);
-          return result;
-        },
-      );
-    }
-    return [];
+  void queryBatch(
+    _$AppDatabaseBatchWrapper batch, {
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+    int? offset,
+    List<String> dropKeys = const [],
+  }) {
+    batch.query(
+      tableName,
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+      offset: offset,
+      onCommit: (noResult, object) async {
+        if (noResult == true || object is! List<Map<String, Object?>>) {
+          throw StateError('returned object $object is not expected type.');
+        }
+        var queryResult = await convertReferences(
+          object,
+          batch.executor,
+          dropKeys,
+        );
+
+        final result = mapToObject(queryResult);
+        return result;
+      },
+    );
   }
 
   Future<User?> get(
-    int id, {
+    int id,
+    _$AppDatabaseExecutor db, [
     List<String> dropKeys = const [],
-    _$AppDatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
+  ]) async {
+    final result = await query(
+      db,
+      where: '${column.id} = ?',
+      whereArgs: [id],
+      dropKeys: dropKeys,
+    );
 
-    if (db != null) {
-      final result = await query(
-        where: '${column.id} = ?',
-        whereArgs: [id],
-        dropKeys: dropKeys,
-        db: db,
-      );
-
-      if (result.isEmpty) {
-        return null;
-      }
-
-      assert(result.length == 1);
-      return result[0];
-    } else if (batch != null) {
-      batch.query(
-        tableName,
-        where: '${column.id} = ?',
-        whereArgs: [id],
-        onCommit: (noResult, object) async {
-          if (noResult == true || object is! List<Map<String, Object?>>) {
-            throw StateError('returned object $object is not expected type.');
-          }
-
-          if (object.isEmpty) {
-            return null;
-          }
-
-          final queryResult = await convertReferences(
-            object,
-            batch.executor,
-            dropKeys,
-          );
-          final result = mapToObject(queryResult);
-          assert(result.length == 1);
-          return result[0];
-        },
-      );
+    if (result.isEmpty) {
+      return null;
     }
-    return null;
+
+    assert(result.length == 1);
+    return result[0];
   }
 
-  Future<int> delete(
-    User item, {
-    _$AppDatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-    assert(item.id != 0);
+  void getBatch(
+    int id,
+    _$AppDatabaseBatchWrapper batch, [
+    List<String> dropKeys = const [],
+  ]) {
+    batch.query(
+      tableName,
+      where: '${column.id} = ?',
+      whereArgs: [id],
+      onCommit: (noResult, object) async {
+        if (noResult == true || object is! List<Map<String, Object?>>) {
+          throw StateError('returned object $object is not expected type.');
+        }
 
-    if (db != null) {
-      final id = await db.delete(
-        tableName,
-        where: '${column.id} = ?',
-        whereArgs: [item.id],
-      );
-      return id;
-    } else if (batch != null) {
-      batch.delete(tableName, where: '${column.id} = ?', whereArgs: [item.id]);
+        if (object.isEmpty) {
+          return null;
+        }
+
+        final queryResult = await convertReferences(
+          object,
+          batch.executor,
+          dropKeys,
+        );
+        final result = mapToObject(queryResult);
+        assert(result.length == 1);
+        return result[0];
+      },
+    );
+  }
+
+  Future<int> delete(User item, _$AppDatabaseExecutor db) async {
+    if (item.id == 0) {
+      throw ArgumentError('Cannot delete User with id 0.');
     }
-    return -1;
+
+    final id = await db.delete(
+      tableName,
+      where: '${column.id} = ?',
+      whereArgs: [item.id],
+    );
+    return id;
+  }
+
+  void deleteBatch(User item, _$AppDatabaseBatchWrapper batch) {
+    if (item.id == 0) {
+      throw ArgumentError('Cannot delete User with id 0.');
+    }
+
+    batch.delete(tableName, where: '${column.id} = ?', whereArgs: [item.id]);
   }
 }
 
@@ -1351,13 +1356,7 @@ class _$ItemInfoHelper {
     return item;
   }
 
-  Future<int> register(
-    ItemInfo item, {
-    _$AppDatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-
+  Future<int> register(ItemInfo item, _$AppDatabaseExecutor db) async {
     final map = item.toSqlMap();
     var command = 'REPLACE INTO';
     if (item.id == 0) {
@@ -1367,22 +1366,29 @@ class _$ItemInfoHelper {
         '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
+    final id = await db.rawInsert(sql, map.values.toList());
+    item.id = id;
+    return id;
+  }
 
-    if (db != null) {
-      final id = await db.rawInsert(sql, map.values.toList());
-      item.id = id;
-      return id;
-    } else if (batch != null) {
-      batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
-        if (item.id == 0) {
-          if (noResult != true && object is int) {
-            item.id = object;
-          }
-        }
-        return object;
-      });
+  void registerBatch(ItemInfo item, _$AppDatabaseBatchWrapper batch) {
+    final map = item.toSqlMap();
+    var command = 'REPLACE INTO';
+    if (item.id == 0) {
+      command = 'INSERT INTO';
     }
-    return -1;
+    final sql =
+        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+    // print('register sql: $sql');
+    // print('args: ${map.values.toList()}');
+    batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
+      if (item.id == 0) {
+        if (noResult != true && object is int) {
+          item.id = object;
+        }
+      }
+      return object;
+    });
   }
 
   Future<List<Map<String, Object?>>> convertReferences(
@@ -1415,124 +1421,129 @@ class _$ItemInfoHelper {
     return result;
   }
 
-  Future<List<ItemInfo>> query({
+  Future<List<ItemInfo>> query(
+    _$AppDatabaseExecutor db, {
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
     int? limit,
     int? offset,
     List<String> dropKeys = const [],
-    _$AppDatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
   }) async {
-    assert((db != null) ^ (batch != null));
+    var queryResult = await db.query(
+      tableName,
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+      offset: offset,
+    );
+    queryResult = await convertReferences(queryResult, db, dropKeys);
 
-    if (db != null) {
-      var queryResult = await db.query(
-        tableName,
-        where: where,
-        whereArgs: whereArgs,
-        orderBy: orderBy,
-        limit: limit,
-        offset: offset,
-      );
-      queryResult = await convertReferences(queryResult, db, dropKeys);
+    final result = mapToObject(queryResult);
+    return result;
+  }
 
-      final result = mapToObject(queryResult);
-      return result;
-    } else if (batch != null) {
-      batch.query(
-        tableName,
-        where: where,
-        whereArgs: whereArgs,
-        orderBy: orderBy,
-        limit: limit,
-        offset: offset,
-        onCommit: (noResult, object) async {
-          if (noResult == true || object is! List<Map<String, Object?>>) {
-            throw StateError('returned object $object is not expected type.');
-          }
-          final queryResult = await convertReferences(
-            object,
-            batch.executor,
-            dropKeys,
-          );
-          final result = mapToObject(queryResult);
-          return result;
-        },
-      );
-    }
-    return [];
+  void queryBatch(
+    _$AppDatabaseBatchWrapper batch, {
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+    int? offset,
+    List<String> dropKeys = const [],
+  }) {
+    batch.query(
+      tableName,
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+      offset: offset,
+      onCommit: (noResult, object) async {
+        if (noResult == true || object is! List<Map<String, Object?>>) {
+          throw StateError('returned object $object is not expected type.');
+        }
+        var queryResult = await convertReferences(
+          object,
+          batch.executor,
+          dropKeys,
+        );
+
+        final result = mapToObject(queryResult);
+        return result;
+      },
+    );
   }
 
   Future<ItemInfo?> get(
-    int id, {
+    int id,
+    _$AppDatabaseExecutor db, [
     List<String> dropKeys = const [],
-    _$AppDatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
+  ]) async {
+    final result = await query(
+      db,
+      where: '${column.id} = ?',
+      whereArgs: [id],
+      dropKeys: dropKeys,
+    );
 
-    if (db != null) {
-      final result = await query(
-        where: '${column.id} = ?',
-        whereArgs: [id],
-        dropKeys: dropKeys,
-        db: db,
-      );
-
-      if (result.isEmpty) {
-        return null;
-      }
-
-      assert(result.length == 1);
-      return result[0];
-    } else if (batch != null) {
-      batch.query(
-        tableName,
-        where: '${column.id} = ?',
-        whereArgs: [id],
-        onCommit: (noResult, object) async {
-          if (noResult == true || object is! List<Map<String, Object?>>) {
-            throw StateError('returned object $object is not expected type.');
-          }
-
-          if (object.isEmpty) {
-            return null;
-          }
-
-          final queryResult = await convertReferences(
-            object,
-            batch.executor,
-            dropKeys,
-          );
-          final result = mapToObject(queryResult);
-          assert(result.length == 1);
-          return result[0];
-        },
-      );
+    if (result.isEmpty) {
+      return null;
     }
-    return null;
+
+    assert(result.length == 1);
+    return result[0];
   }
 
-  Future<int> delete(
-    ItemInfo item, {
-    _$AppDatabaseExecutor? db,
-    _$AppDatabaseBatchWrapper? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-    assert(item.id != 0);
+  void getBatch(
+    int id,
+    _$AppDatabaseBatchWrapper batch, [
+    List<String> dropKeys = const [],
+  ]) {
+    batch.query(
+      tableName,
+      where: '${column.id} = ?',
+      whereArgs: [id],
+      onCommit: (noResult, object) async {
+        if (noResult == true || object is! List<Map<String, Object?>>) {
+          throw StateError('returned object $object is not expected type.');
+        }
 
-    if (db != null) {
-      final id = await db.delete(
-        tableName,
-        where: '${column.id} = ?',
-        whereArgs: [item.id],
-      );
-      return id;
-    } else if (batch != null) {
-      batch.delete(tableName, where: '${column.id} = ?', whereArgs: [item.id]);
+        if (object.isEmpty) {
+          return null;
+        }
+
+        final queryResult = await convertReferences(
+          object,
+          batch.executor,
+          dropKeys,
+        );
+        final result = mapToObject(queryResult);
+        assert(result.length == 1);
+        return result[0];
+      },
+    );
+  }
+
+  Future<int> delete(ItemInfo item, _$AppDatabaseExecutor db) async {
+    if (item.id == 0) {
+      throw ArgumentError('Cannot delete ItemInfo with id 0.');
     }
-    return -1;
+
+    final id = await db.delete(
+      tableName,
+      where: '${column.id} = ?',
+      whereArgs: [item.id],
+    );
+    return id;
+  }
+
+  void deleteBatch(ItemInfo item, _$AppDatabaseBatchWrapper batch) {
+    if (item.id == 0) {
+      throw ArgumentError('Cannot delete ItemInfo with id 0.');
+    }
+
+    batch.delete(tableName, where: '${column.id} = ?', whereArgs: [item.id]);
   }
 }
