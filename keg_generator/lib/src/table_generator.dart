@@ -8,7 +8,7 @@ import 'package:source_gen/source_gen.dart';
 import 'package:keg_annotation/keg_annotation.dart';
 
 class TableGenerator extends GeneratorForAnnotation<Table> {
-  final Map<String, _FieldInfo> _fieldMap = {};
+  Map<String, _FieldInfo> _fieldMap = {};
   final List<String> _requiredPositional = [];
   final List<String> _optionalPositional = [];
   final Map<String, List<String>> _columnMap = {};
@@ -61,7 +61,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       }
     }
 
-    await _analyzeFields(element);
+    _fieldMap = await _analyzeFields(element, buildStep);
+    await _analyzeConstructor(element);
 
     // helper fields
     if (!_fieldMap.containsKey('id')) {
@@ -79,7 +80,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     var columnTypes = '{'; // map
 
     for (final field in _fieldMap.values) {
-      if (field.type == .dtBackLink) {
+      if (field.type == .dtBackLink || field.type == .dtManyReference) {
         continue;
       }
 
@@ -173,6 +174,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     lines.addAll(_generateTableCreators(className));
     lines.addAll(_generateMapConverters(className));
+    lines.addAll(_generateRegisterMethods(className, appDbName));
     lines.addAll(_generateDataHandlers(className, appDbName));
 
     lines.add('}'); // end of class
@@ -252,7 +254,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     ];
 
     for (final field in _fieldMap.values) {
-      if (field.type == .dtBackLink) {
+      if (field.type == .dtBackLink || field.type == .dtManyReference) {
         continue;
       }
 
@@ -317,7 +319,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       } else if (field.constructType == .optional) {
         if (field.type == .dtReference) {
           lines.add('${field.className}? ${field.name};');
-        } else if (field.type == .dtBackLink) {
+        } else if (field.type == .dtBackLink ||
+            field.type == .dtManyReference) {
           lines.add(
             'List<${field.className}> ${field.name} = ${field.defaultValue};',
           );
@@ -361,7 +364,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
             '}',
           ]);
         }
-      } else if (field.type == .dtBackLink) {
+      } else if (field.type == .dtBackLink || field.type == .dtManyReference) {
         lines.add("map['${field.columnName}'] as List<${field.className}>;");
       } else {
         lines.add("map['${field.columnName}'] as ${field.type.dartType};");
@@ -379,7 +382,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     lines.add('}');
     lines.add('');
 
-    lines.add('final item = $className(');
+    lines.add('final \$item = $className(');
     for (final param in _requiredPositional) {
       lines.add('$param,');
     }
@@ -410,65 +413,228 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       if (type.isEmpty) {
         type = field.className;
       }
-      if (field.type == .dtBackLink) {
+      if (field.type == .dtBackLink || field.type == .dtManyReference) {
         type = 'List<${field.className}>';
       }
-      lines.add("item.${field.name} = params['${field.name}'] as $type;");
+      lines.add("\$item.${field.name} = params['${field.name}'] as $type;");
       lines.add('}');
     }
 
-    lines.add('return item;');
+    lines.add('return \$item;');
     lines.add('}'); // end of function
 
     return lines;
   }
 
-  List<String> _generateDataHandlers(String className, String appDbName) {
+  List<String> _generateRegisterMethods(String className, String appDbName) {
     final batch = '_\$${appDbName}BatchWrapper';
+    var lines = <String>[];
+
+    // compare many reference fields
+    final manyFields = _fieldMap.values.where(
+      (field) => field.type == .dtManyReference,
+    );
+    for (final field in manyFields) {
+      final upperCamel = toUpperCamelCase(field.name);
+      lines.addAll([
+        'bool compare$upperCamel(',
+        '  $className item1, Set<int> set2) {',
+        '  if (item1.${field.name}.length != set2.length) {',
+        '    return false;',
+        '  }',
+        '  final list1 = item1.${field.name}.map((e) => e.id).toList();',
+        '  for (final item in list1) {',
+        '    if (!set2.contains(item)) {',
+        '      return false;',
+        '    }',
+        '  }',
+        '  return true;',
+        '}',
+        '',
+      ]);
+    }
+
+    // register middle records for many to many fields
+    for (final field in manyFields) {
+      final manyToMany = field.annotationObject as _ManyToManyInternal;
+      final upperCamel = toUpperCamelCase(field.name);
+      final middleHelper = 'appdb.${toLowerCamelCase(manyToMany.middle)}Helper';
+      lines.addAll([
+        'Future<void> register$upperCamel($className item,',
+        ' _\$${appDbName}Executor executor) async {',
+        '  final batch = executor.batch();',
+        '  for (final target in item.${field.name}) {',
+        '    Map<String, Object?> middleMap = {};',
+        '    middleMap[$middleHelper.column.${manyToMany.self}] = item;',
+        '    middleMap[$middleHelper.column.${manyToMany.target}] = target;',
+        "    middleMap[$middleHelper.column.${manyToMany.field}] = '${field.name}';",
+        '    final middle = ${manyToMany.middle}.fromSqlMap(middleMap);',
+        //'    final middle = ${manyToMany.middle}(',
+        // '      ${manyToMany.self}: id,',
+        // '      ${manyToMany.target}: target.id,',
+        // '    );',
+        '    batch.register${manyToMany.middle}(middle);',
+        '  }',
+        '  await batch.commit();',
+        '}',
+      ]);
+    }
 
     // register
-    final registerCommon = [
+    final registerCommon = [];
+    for (final field in manyFields) {
+      registerCommon.addAll([
+        'final ${field.name}Noids = item.${field.name}.where((e) => e.id == 0);',
+        'if (${field.name}Noids.isNotEmpty) {',
+        '  throw ArgumentError('
+            "'Cannot register $className because ${field.name} has unregistered items.'"
+            ');',
+        '}',
+        'if (item.${field.name}.length != item.${field.name}.toSet().length) {',
+        '  throw ArgumentError(',
+        "'Cannot register $className because ${field.name} has duplicate items.');",
+        '}',
+      ]);
+    }
+
+    registerCommon.addAll([
       'final map = item.toSqlMap();',
       "var command = 'REPLACE INTO';",
-      'if (item.id == 0) {',
+      'final originalId = item.id;',
+      'if (originalId == 0) {',
       "  command = 'INSERT INTO';",
       '}',
       "final sql = '\$command \$tableName (\${map.keys.join(',')}) VALUES (\${List.filled(map.length, '?').join(', ')})';",
       "// print('register sql: \$sql');",
       "// print('args: \${map.values.toList()}');",
-    ];
+    ]);
+
+    final registerCommon2 = [];
+    for (final field in manyFields) {
+      final upperCamel = toUpperCamelCase(field.name);
+      final manyToMany = field.annotationObject as _ManyToManyInternal;
+      final middleClassName = manyToMany.middle;
+      final middleHelper = '${toLowerCamelCase(middleClassName)}Helper';
+      final selfField = manyToMany.self;
+      final targetField = manyToMany.target;
+
+      registerCommon2.addAll([
+        '// handle many to many relation for ${field.name}',
+        'bool add$upperCamel = true;',
+        'if (originalId != 0) {',
+        ' // compare existing middle records',
+        ' final existingMiddleList = await executor.query(',
+        '   appdb.$middleHelper.tableName,',
+        "   where:'\${appdb.$middleHelper.column.$selfField} = ? AND \${appdb.$middleHelper.column.${manyToMany.field}} = ?',",
+        "   whereArgs: [originalId, '${field.name}'],",
+        ' );',
+        ' final existingTargetIds = existingMiddleList',
+        '   .where((e) => e[appdb.$middleHelper.column.$targetField] != null)',
+        '   .map((e) => e[appdb.$middleHelper.column.$targetField] as int)',
+        '   .toSet();',
+        ' if (!compare$upperCamel(item, existingTargetIds)) {',
+        '   // delete middle records',
+        '   await executor.delete$middleClassName(',
+        "     where: '\${appdb.$middleHelper.column.$selfField} = ? AND \${appdb.$middleHelper.column.${manyToMany.field}} = ?',",
+        "     whereArgs: [originalId, '${field.name}'],",
+        '   );',
+        ' } else {',
+        '   add$upperCamel = false;',
+        ' }',
+        '}',
+        //'if (item.id == 0) {',
+        //'item.id = id;',
+        //'}',
+        'if (add$upperCamel) {',
+        '  // register middle records',
+        '  await register$upperCamel(item, executor);',
+        '}',
+      ]);
+    }
+
     final registerCommand = 'rawInsert(sql, map.values.toList(),';
-    var lines = <String>[
+    lines.addAll([
       'Future<int> register($className item , _\$${appDbName}Executor db) async {',
       ...registerCommon,
       'final id = await db.$registerCommand);',
       'item.id = id;',
+      '',
+      if (registerCommon2.isNotEmpty) 'final executor = db;',
+      ...registerCommon2,
+      '',
       'return id;',
       '}',
       '',
       'void registerBatch($className item, $batch batch) {',
       ...registerCommon,
       '  batch.$registerCommand (noResult, object) async {',
+      if (registerCommon2.isNotEmpty) '    final executor = batch.executor;',
+      //'    int id = item.id;',
       '    if (item.id == 0) {',
-      '      if (noResult != true && object is int) {',
-      '        item.id = object;',
-      '      }',
-      // '      if (noResult == true || object is! int) {',
-      // "        throw StateError('returned object \$object is not int.');",
-      // '      }',
-      // '      item.id = object;',
+      //'      if (noResult != true && object is int) {',
+      //'        id = object;',
+      //'      }',
+      '      if (noResult == true || object is! int) {',
+      "        throw StateError('returned object \$object is not int.');",
+      '     }',
+      '      item.id = object;',
+      //'      id = object;',
       '    }',
+      ...registerCommon2,
+      //'    item.id = id;',
       '    return object;',
       '  });',
       '}',
       '',
-    ];
+    ]);
+
+    return lines;
+  }
+
+  List<String> _generateDataHandlers(String className, String appDbName) {
+    final batch = '_\$${appDbName}BatchWrapper';
+    var lines = <String>[];
 
     // convert reference
     lines.addAll([
       'Future<List<Map<String, Object?>>> convertReferences(',
       'List<Map<String, Object?>> mapList, _\$${appDbName}Executor db,',
       ' List<String> dropKeys) async {',
+    ]);
+
+    for (final field in _fieldMap.values) {
+      if (field.type == .dtManyReference) {
+        var varName = toLowerCamelCase(field.className);
+        varName = '${varName}Helper';
+        final manyToMany = field.annotationObject as _ManyToManyInternal;
+        final middleHelper = '${toLowerCamelCase(manyToMany.middle)}Helper';
+        var asc = 'ASC';
+        if (manyToMany.descendant) {
+          asc = 'DESC';
+        }
+
+        lines.addAll([
+          'final ${field.name}ColumnList = <String>[];'
+              'for (final col in appdb.$middleHelper.columnList) {',
+          '  ${field.name}ColumnList.add(\'\${appdb.$middleHelper.tableName}.\$col as "\${appdb.$middleHelper.tableName}-\$col"\');',
+          '}',
+          'for (final col in appdb.$varName.columnList) {',
+          '  ${field.name}ColumnList.add(\'\${appdb.$varName.tableName}.\$col as "\${appdb.$varName.tableName}-\$col"\');',
+          '}',
+          "final ${field.name}Sql = '''SELECT \${${field.name}ColumnList.join(', ')} ",
+          '        FROM \${appdb.$middleHelper.tableName} ',
+          '        INNER JOIN \${appdb.$varName.tableName} ',
+          '        ON \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.target}} = ',
+          '        \${appdb.$varName.tableName}.id ',
+          '        WHERE \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.self}} = ? ',
+          "        AND \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.field}} ='${field.name}' ",
+          "        ORDER BY \${appdb.$varName.tableName}.\${appdb.$varName.column.${manyToMany.order}} $asc''';",
+          '',
+        ]);
+      }
+    }
+
+    lines.addAll([
       '  var result = mapList;',
       '  result = result.toList(); // convert to modifiable list',
       '  final batch = db.batch();',
@@ -529,6 +695,36 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           ');',
           '',
         ]);
+      } else if (field.type == .dtManyReference) {
+        var varName = toLowerCamelCase(field.className);
+        varName = '${varName}Helper';
+        lines.addAll([
+          'batch.rawQuery(',
+          '${field.name}Sql,',
+          '[id],',
+          '(noResult, object) async {',
+          '  if(noResult == true || object is! List<Map<String, Object?>>) {',
+          "    throw StateError('returned object \$object is not expected type.');",
+          '  }',
+          '  final middleList = object;',
+          '  final targetList = <${field.className}>[];',
+          '  for (final middleMap in middleList) {',
+          '    final targetMap = <String, Object?>{};',
+          '    for (final key in middleMap.keys) {',
+          "      if (key.startsWith('\${appdb.$varName.tableName}-')) {",
+          "        final newKey = key.substring(appdb.$varName.tableName.length + 1);",
+          '        targetMap[newKey] = middleMap[key];',
+          '      }',
+          '    }',
+          '    final target = ${field.className}.fromSqlMap(targetMap);',
+          '    targetList.add(target);',
+          '  }',
+          "  map['${field.columnName}'] = targetList;",
+          '  return targetList;',
+          '},',
+          ');',
+          '',
+        ]);
       }
     }
     lines.addAll([
@@ -538,13 +734,14 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '',
       'return result;',
       '}', // end function
-      ''
+      '',
     ]);
 
     // mapToObject
     lines.addAll([
+      '/// convert map list from sql query to object list',
       'List<$className> mapToObject(List<Map<String, Object?>> mapList) {',
-      ' final result = mapList.map((map) => $className.fromSqlMap(map)).toList();'
+      ' final result = mapList.map((map) => $className.fromSqlMap(map)).toList();',
     ]);
     final backLinkFields = _fieldMap.values.where(
       (field) => field.type == .dtBackLink,
@@ -565,8 +762,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     }
     lines.addAll([
       'return result;'
-      '}', // end func
-      ''
+          '}', // end func
+      '',
     ]);
     // make query statement
     /*
@@ -604,10 +801,11 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '  final result = mapToObject(queryResult);',
       '  return result;',
     ];
-    final queryCommand = 'query(tableName, where: where, whereArgs: whereArgs, orderBy: orderBy, limit: limit, offset: offset,';
+    final queryCommand =
+        'query(tableName, where: where, whereArgs: whereArgs, orderBy: orderBy, limit: limit, offset: offset,';
     lines.addAll([
       'Future<List<$className>> query(_\$${appDbName}Executor db, '
-      '  {String? where, List<Object?>? whereArgs, ',
+          '  {String? where, List<Object?>? whereArgs, ',
       '  String? orderBy, int? limit, int? offset,',
       '  List<String> dropKeys = const [], ',
       '  }) async {',
@@ -674,96 +872,121 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '}',
       '',
     ]);
-    /*
-    lines.addAll([
-      'Future<$className?> get(int id, {',
-      'List<String> dropKeys = const [], _\$${appDbName}Executor? db, $batch? batch}) async {',
-      '  assert((db != null) ^ (batch != null));',
-      '',
-      '  if (db != null) {',
-      '    final result = await query(',
-      "       where: '\${column.id} = ?',",
-      '       whereArgs: [id],',
-      '       dropKeys: dropKeys,'
-          '       db: db);',
-      '',
-      '    if (result.isEmpty) {',
-      '      return null;',
-      '    }',
-      '',
-      '    assert(result.length == 1);',
-      '    return result[0];',
-      '} else if (batch != null) {',
-      "  batch.query(tableName, where: '\${column.id} = ?', whereArgs: [id],",
-      '    onCommit: (noResult, object) async {',
-      '    if(noResult == true || object is! List<Map<String, Object?>>) {',
-      "      throw StateError('returned object \$object is not expected type.');",
-      '    }',
-      '',
-      '    if (object.isEmpty) {',
-      '       return null;',
-      '    }',
-      '',
-      '    final queryResult = await convertReferences(object, batch.executor, dropKeys);',
-      '    final result = mapToObject(queryResult);',
-      '    assert(result.length == 1);',
-      '    return result[0];',
-      '',
-      '    },',
-      ' );',
-      '}',
-      'return null;',
-      '}',
-      '',
-    ]);
-    */
 
     // delete
     final deleteCommon = [
-      'if (item.id == 0) {',
-      "  throw ArgumentError('Cannot delete $className with id 0.');",
+      'final noids = itemList.where((e) => e.id == 0);',
+      'if (noids.isNotEmpty) {',
+      '  throw ArgumentError(',
+      "    'Cannot delete $className because it has unregistered items.'",
+      '  );',
       '}',
+      'final ids = itemList.map((e) => e.id).toSet().toList();',
+      '',
     ];
-    final deleteCmd = "delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);";
+    final deleteCommon2 = <String>[];
+    final deleteCommon3 = <String>[];
+    for (final field in _fieldMap.values) {
+      if (field.type == .dtManyReference) {
+        final manyToMany = field.annotationObject as _ManyToManyInternal;
+        final middleHelper = '${toLowerCamelCase(manyToMany.middle)}Helper';
+        final selfField = manyToMany.self;
+
+        deleteCommon2.addAll([
+          '// delete many to many middle records for ${field.name}',
+          'await db.delete${manyToMany.middle}(',
+          "  where:'\${appdb.$middleHelper.column.$selfField} in (\${List.filled(ids.length, '?').join(',')})',",
+          '  whereArgs: ids,',
+          ');',
+        ]);
+        deleteCommon3.addAll([
+          '// delete many to many middle records for ${field.name}',
+          'batch.delete${manyToMany.middle}(',
+          "  where:'\${appdb.$middleHelper.column.$selfField} in (\${List.filled(ids.length, '?').join(',')})',",
+          '  whereArgs: ids,',
+          ');',
+        ]);
+      }
+    }
+
+    final deleteCmd =
+        "delete(tableName, where: '\${column.id} in (\${List.filled(ids.length, '?').join(',')})', whereArgs: ids);";
+
+    final manyFields = _fieldMap.values.where(
+      (field) => field.type == .dtManyReference,
+    );
+
     lines.addAll([
-      'Future<int> delete($className item , _\$${appDbName}Executor db) async {',
-      ...deleteCommon,
-      '',
-      'final id = await db.$deleteCmd',
-      'return id;',
+      'Future<int> delete(_\$${appDbName}Executor db, {String? where, List<Object?>? whereArgs}) async {',
+    ]);
+    if (manyFields.isNotEmpty) {
+      lines.addAll(['  // delete many to many middle records']);
+      for (final field in manyFields) {
+        final manyToMany = field.annotationObject as _ManyToManyInternal;
+        final middleHelper = '${toLowerCamelCase(manyToMany.middle)}Helper';
+        final selfField = manyToMany.self;
+
+        lines.addAll([
+          '  await db.delete${manyToMany.middle}(',
+          "    where:'\${appdb.$middleHelper.column.$selfField} in (SELECT id FROM \$tableName "
+              " \${where != null ? ' WHERE \$where' : ''})',"
+              "    whereArgs: whereArgs,",
+          '  );',
+        ]);
+      }
+    }
+    lines.addAll([
+      'return db.delete(tableName, where: where, whereArgs: whereArgs);',
       '}',
       '',
-      'void deleteBatch($className item , $batch batch) {',
+      'Future<void> deleteBatch($batch batch, {String? where, List<Object?>? whereArgs}) async {',
+    ]);
+    if (manyFields.isNotEmpty) {
+      lines.addAll(['  // delete many to many middle records']);
+      for (final field in manyFields) {
+        final manyToMany = field.annotationObject as _ManyToManyInternal;
+        final middleHelper = '${toLowerCamelCase(manyToMany.middle)}Helper';
+        lines.addAll([
+          '  batch.delete${manyToMany.middle}(',
+          "    where:'\${appdb.$middleHelper.column.${manyToMany.self}} in (SELECT id FROM \$tableName "
+              " \${where != null ? ' WHERE \$where' : ''})',"
+              "    whereArgs: whereArgs,",
+          '  );',
+        ]);
+      }
+    }
+
+    lines.addAll([
+      'batch.delete(tableName, where: where, whereArgs: whereArgs);',
+      '}',
+      '',
+      'Future<int> deleteByIds( _\$${appDbName}Executor db, List<$className> itemList) async {',
       ...deleteCommon,
+      '',
+      ...deleteCommon2,
+      '',
+      'final count = await db.$deleteCmd',
+      'return count;',
+      '}',
+      '',
+      'void deleteByIdsBatch($batch batch, List<$className> itemList) {',
+      ...deleteCommon,
+      '',
+      ...deleteCommon3,
       '',
       'batch.$deleteCmd',
       '}',
       '',
     ]);
-    /*
-    lines.addAll([
-      'Future<int> delete($className item , {_\$${appDbName}Executor? db, $batch batch}) async {',
-      '  assert((db != null) ^ (batch != null));',
-      'if (item.id == 0) {',
-      "throw ArgumentError('Cannot delete User with id 0.');",
-      '}',
-      '',
-      ' if (db != null) {',
-      "    final id = await db.delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);",
-      '    return id;',
-      ' } else if (batch != null) {',
-      "    batch.delete(tableName, where: '\${column.id} = ?', whereArgs: [item.id]);"
-          ' }',
-      ' return -1;'
-          '}',
-    ]);
-    */
     return lines;
   }
 
-  Future<void> _analyzeFields(ClassElement element) async {
-    _fieldMap.clear();
-    _requiredPositional.clear();
+  Future<Map<String, _FieldInfo>> _analyzeFields(
+    ClassElement element,
+    BuildStep buildStep,
+  ) async {
+    final fieldMap = <String, _FieldInfo>{};
+    //_fieldMap.clear();
 
     for (final field in element.fields) {
       if (field.isPrivate) {
@@ -815,27 +1038,39 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         type = _DataType.dtReference;
         fieldInfo.className = typeName;
         fieldInfo.columnName += '_id';
-      } else if (_annotatedWith(field, 'BackLink')) {
+      } else {
+        var linkName = '';
+        if (_annotatedWith(field, 'BackLink')) {
+          linkName = 'BackLink';
+          type = _DataType.dtBackLink;
+        } else if (_annotatedWith(field, 'ManyToMany')) {
+          linkName = 'ManyToMany';
+          type = _DataType.dtManyReference;
+        } else {
+          final msg =
+              "${element.name}: field ${field.name} is unsupported type";
+          throw InvalidGenerationSourceError(msg);
+        }
         fieldInfo.annotationObject = annotationObject;
         if (!field.type.isDartCoreList) {
           final msg =
-              '${element.name}: field ${field.name} is BackLink and it must be List';
+              '${element.name}: field ${field.name} is $linkName and it must be List';
           throw InvalidGenerationSourceError(msg);
         }
         if (field.type is! ParameterizedType) {
           final msg =
-              '${element.name}: field ${field.name} is BackLink and it must be generic List';
+              '${element.name}: field ${field.name} is $linkName and it must be generic List';
           throw InvalidGenerationSourceError(msg);
         }
         final dartType = field.type as ParameterizedType;
         if (dartType.typeArguments.isEmpty) {
           final msg =
-              '${element.name}: field ${field.name} is BackLink but cannot get List type';
+              '${element.name}: field ${field.name} is $linkName but cannot get List type';
           throw InvalidGenerationSourceError(msg);
         }
         if (!_annotatedWith(dartType.typeArguments[0].element, 'Table')) {
           final msg =
-              '${element.name}: field ${field.name} is BackLink but it is not List of table class';
+              '${element.name}: field ${field.name} is $linkName but it is not List of table class';
           throw InvalidGenerationSourceError(msg);
         }
 
@@ -844,16 +1079,74 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           final msg = '$typeName is not included in $appDbName';
           throw InvalidGenerationSourceError(msg);
         }
-        type = _DataType.dtBackLink;
         fieldInfo.className = typeName;
-      } else {
-        final msg = "${element.name}: field ${field.name} is unsupported type";
-        throw InvalidGenerationSourceError(msg);
+
+        if (fieldInfo.annotationObject is _ManyToManyInternal) {
+          // many to many field validation
+          final manyToMany = fieldInfo.annotationObject as _ManyToManyInternal;
+
+          final library = await buildStep.inputLibrary;
+          if (tableNameList.contains(manyToMany.middle) == false) {
+            final msg = '${element.name}: annotation error. '
+              'class ${manyToMany.middle} is not included in $appDbName';
+            throw InvalidGenerationSourceError(msg);
+          }
+          final middleElement = library.getClass(manyToMany.middle);
+          if (middleElement == null) {
+            final msg = '${element.name}: annotation error. '
+            'class ${manyToMany.middle} not found';
+            throw InvalidGenerationSourceError(msg);
+          }
+          
+          final middleFieldMap = await _analyzeFields(
+            middleElement,
+            buildStep,
+          );
+          final selfField = middleFieldMap[manyToMany.self];
+          if (selfField == null) {
+            final msg ='${element.name}: ${fieldInfo.name} annotation error. '
+             'field ${manyToMany.self} not found in class ${manyToMany.middle}';
+            throw InvalidGenerationSourceError(msg);
+          }
+          if (selfField.className != element.name) {
+            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
+             'field ${manyToMany.self} type mismatch in class ${manyToMany.middle}';
+            throw InvalidGenerationSourceError(msg);
+          }
+          final targetField = middleFieldMap[manyToMany.target];
+          if (targetField == null) {
+            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
+             'field ${manyToMany.target} not found in class ${manyToMany.middle}';
+            throw InvalidGenerationSourceError(msg);
+          }
+          if (targetField.className != typeName) {
+            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
+             'field ${manyToMany.target} type mismatch in class ${manyToMany.middle}';
+            throw InvalidGenerationSourceError(msg);
+          }
+          final fieldField = middleFieldMap[manyToMany.field];
+          if (fieldField == null) {
+            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
+              'field ${manyToMany.field} not found in class ${manyToMany.middle}';
+            throw InvalidGenerationSourceError(msg);
+          }
+          if (fieldField.type != _DataType.dtString) {
+            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
+              'field ${manyToMany.field} must be String in class ${manyToMany.middle}';
+            throw InvalidGenerationSourceError(msg);
+          }
+        }
       }
       fieldInfo.type = type;
 
-      _fieldMap[name] = fieldInfo;
+      fieldMap[name] = fieldInfo;
     }
+    return fieldMap;
+  }
+
+  Future<void> _analyzeConstructor(ClassElement element) async {
+    _requiredPositional.clear();
+    _optionalPositional.clear();
 
     final constructor = element.unnamedConstructor;
     if (constructor == null || constructor.isPrivate) {
@@ -998,14 +1291,6 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     return;
   }
 
-  /// Converts a CamelCase string to snake_case.
-  String toSnakeCase(String input) {
-    final regex = RegExp(r'(?<=[a-z])[A-Z]');
-    return input
-        .replaceAllMapped(regex, (Match m) => '_${m.group(0)}')
-        .toLowerCase();
-  }
-
   Object? annotationObject;
   bool _annotatedWith(Element? field, String name) {
     bool found = false;
@@ -1027,13 +1312,40 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           library.identifier.startsWith('package:keg_annotation')) {
         found = true;
         annotationObject = null;
-        if (annoElem.displayName == 'BackLink') {
+        if (annoElem.displayName == 'BackLink' ||
+            annoElem.displayName == 'ManyToMany') {
           final dartObject = annotation.computeConstantValue();
-          final to = dartObject?.getField('to')?.toStringValue();
           final order = dartObject?.getField('order')?.toStringValue();
           final desc = dartObject?.getField('descendant')?.toBoolValue();
-          if (to != null && order != null && desc != null) {
-            annotationObject = BackLink(to: to, order: order, descendant: desc);
+          if (annoElem.displayName == 'BackLink') {
+            final to = dartObject?.getField('to')?.toStringValue();
+            if (to != null && order != null && desc != null) {
+              annotationObject = BackLink(
+                to: to,
+                order: order,
+                descendant: desc,
+              );
+            }
+          } else if (annoElem.displayName == 'ManyToMany') {
+            final self = dartObject?.getField('self')?.toStringValue();
+            final target = dartObject?.getField('target')?.toStringValue();
+            final middle = dartObject?.getField('middle')?.toTypeValue();
+            final field = dartObject?.getField('field')?.toStringValue();
+            if (self != null &&
+                target != null &&
+                middle != null &&
+                field != null &&
+                order != null &&
+                desc != null) {
+              annotationObject = _ManyToManyInternal(
+                middle: middle.getDisplayString(),
+                self: self,
+                target: target,
+                field: field,
+                order: order,
+                descendant: desc,
+              );
+            }
           }
         }
         break;
@@ -1043,10 +1355,24 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     return found;
   }
 
+  /// Converts a CamelCase string to snake_case.
+  String toSnakeCase(String input) {
+    final regex = RegExp(r'(?<=[a-z])[A-Z]');
+    return input
+        .replaceAllMapped(regex, (Match m) => '_${m.group(0)}')
+        .toLowerCase();
+  }
+
   /// Convert class name to variable name
   String toLowerCamelCase(String input) {
     if (input.isEmpty) return input;
     return input[0].toLowerCase() + input.substring(1);
+  }
+
+  /// Convert variable name to first character to upper case
+  String toUpperCamelCase(String input) {
+    if (input.isEmpty) return input;
+    return input[0].toUpperCase() + input.substring(1);
   }
 }
 
@@ -1059,7 +1385,8 @@ enum _DataType {
   dtDateTime(dartType: 'DateTime'),
   dtEnum(dartType: ''),
   dtReference(dartType: ''),
-  dtBackLink(dartType: '');
+  dtBackLink(dartType: ''),
+  dtManyReference(dartType: '');
 
   const _DataType({required this.dartType});
 
@@ -1081,6 +1408,25 @@ class _FieldInfo {
   //bool isRequired = false;
   ConstructType constructType = .notIncluded;
   Object? annotationObject;
+}
+
+/// copy of ManyToMany annotation except midle field
+class _ManyToManyInternal {
+  final String middle;
+  final String self;
+  final String target;
+  final String field;
+  final String order;
+  final bool descendant;
+
+  const _ManyToManyInternal({
+    required this.middle,
+    required this.self,
+    required this.target,
+    this.field = 'field',
+    this.order = "id",
+    this.descendant = false,
+  });
 }
 
 class _StringListVisitor extends GeneralizingAstVisitor {

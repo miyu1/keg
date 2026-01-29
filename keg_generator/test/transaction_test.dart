@@ -106,8 +106,8 @@ void main() async {
     });
 
     await appdb.transaction((txn) async {
-      await txn.deleteUser(user1);
-      await txn.deleteUser(user2);
+      await txn.deleteUserByIds([user1, user2]);
+      //await txn.deleteUser(user2);
     });
 
     await appdb.readTransaction((txn) async {

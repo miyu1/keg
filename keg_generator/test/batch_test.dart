@@ -108,8 +108,8 @@ void main() async {
     expect(user3?.name, user1.name);
 
     final batch4 = appdb.batch();
-    batch4.deleteUser(user1);
-    batch4.deleteUser(user2);
+    batch4.deleteUserByIds([user1]);
+    batch4.deleteUserByIds([user2]);
     final result4 = await batch4.commit();
     expect(result4.length, 2);
     expect(result4[0], 1);
@@ -136,9 +136,10 @@ void main() async {
     final user2 = User('Mike');
     final batch2 = appdb.batch();
     batch2.registerUser(user2);
-    final result2 = await batch2.apply(noResult: true);
-    expect(result2, isEmpty);
-    expect(user2.id, 0); // !!
+    expect(batch2.commit(noResult: true), throwsStateError);
+    //final result2 = await batch2.apply(noResult: true);
+    //expect(result2, isEmpty);
+    //expect(user2.id, 0); // !!
 
     // when id is not 0, register ends normally
     final user3 = User('Jane', 10);
@@ -154,19 +155,19 @@ void main() async {
 
     // delete ends normally
     final batch5 = appdb.batch();
-    batch5.deleteUser(user3);
+    batch5.deleteUserByIds([user3]);
     final result5 = await batch5.commit(noResult: true);
     expect(result5, isEmpty);
 
     // delete throws when id is 0
     final batch6 = appdb.batch();
-    expect(() => batch6.deleteUser(user2), throwsArgumentError);
+    expect(() => batch6.deleteUserByIds([user2]), throwsArgumentError);
 
     // delete ends normally 2
     final result7 = await appdb.queryUser();
     final batch7 = appdb.batch();
     for(final user in result7) {
-      batch7.deleteUser(user);
+      batch7.deleteUserByIds([user]);
     }
     await batch7.commit(noResult: true);
     

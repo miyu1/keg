@@ -161,7 +161,7 @@ void main() async {
     expect(user3?.id, id);
     expect(user3?.name, user1.name);
 
-    final count = await appdb.deleteUser(user1);
+    final count = await appdb.deleteUserByIds([user1]);
     expect(count, 1);
 
     final result2 = await appdb.queryUser();
@@ -171,10 +171,10 @@ void main() async {
     expect(user4, isNull);
 
     final user5 = User('Mike');
-    expect(appdb.deleteUser(user5), throwsArgumentError);
+    expect(appdb.deleteUserByIds([user5]), throwsArgumentError);
   });
 
-  test('query User', () async {
+  test('query/delete User', () async {
     final user1 = User('John');
     final user2 = User('Mike');
     final user3 = User('Jack');
@@ -204,9 +204,18 @@ void main() async {
     expect(result3.length, 1);
     expect(result3[0].name, 'Mike');
 
-    await appdb.deleteUser(user1);
-    await appdb.deleteUser(user2);
-    await appdb.deleteUser(user3);
+    appdb.deleteUser(
+      where: "${appdb.userHelper.column.name} LIKE 'J%'",
+    );
+
+    final result4 = await appdb.queryUser();
+    expect(result4.length, 1);
+    expect(result4[0].name, 'Mike');
+
+    await appdb.deleteUserByIds([user2]);
+
+    final result5 = await appdb.queryUser();
+    expect(result5.length, 0);
   });
 
   test('insert/delete item', () async {
@@ -233,6 +242,6 @@ void main() async {
     expect(result2[0].isActive, item2.isActive);
     expect(result2[0].created, item2.created);
 
-    await appdb.deleteItemInfo(item2);
+    await appdb.deleteItemInfoByIds([item2]);
   });
 }

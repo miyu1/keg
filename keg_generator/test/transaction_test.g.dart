@@ -27,7 +27,9 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
 
   Future<User?> getUser(int id, [List<String> dropKeys = const []]);
 
-  Future<int> deleteUser(User item);
+  Future<int> deleteUser({String? where, List<Object?>? whereArgs});
+
+  Future<int> deleteUserByIds(List<User> itemList);
 }
 
 class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
@@ -72,7 +74,12 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
       appdb.userHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteUser(User item) => appdb.userHelper.delete(item, this);
+  Future<int> deleteUser({String? where, List<Object?>? whereArgs}) =>
+      appdb.userHelper.delete(this, where: where, whereArgs: whereArgs);
+
+  @override
+  Future<int> deleteUserByIds(List<User> itemList) =>
+      appdb.userHelper.deleteByIds(this, itemList);
 
   // passthrough methods
   @override
@@ -313,11 +320,22 @@ class _$AppDatabaseBatchWrapper implements Batch {
     }
   }
 
-  void deleteUser(
-    User item, [
+  void deleteUser({
+    String? where,
+    List<Object?>? whereArgs,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
+  }) {
+    appdb.userHelper.deleteBatch(this, where: where, whereArgs: whereArgs);
+    if (onCommit != null) {
+      _addCallBack(callBackIndex - 1, onCommit);
+    }
+  }
+
+  void deleteUserByIds(
+    List<User> itemList, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.userHelper.deleteBatch(item, this);
+    appdb.userHelper.deleteByIdsBatch(this, itemList);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -558,7 +576,12 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
       userHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteUser(User item) => userHelper.delete(item, this);
+  Future<int> deleteUser({String? where, List<Object?>? whereArgs}) =>
+      userHelper.delete(this, where: where, whereArgs: whereArgs);
+
+  @override
+  Future<int> deleteUserByIds(List<User> itemsList) =>
+      userHelper.deleteByIds(this, itemsList);
 
   Future<T> transaction<T>(
     Future<T> Function(_$AppDatabaseTransactionWrapper txn) action, {
@@ -821,15 +844,16 @@ class _$UserHelper {
       throw ArgumentError('Unkown map keys. $keys');
     }
 
-    final item = User(name, id);
+    final $item = User(name, id);
 
-    return item;
+    return $item;
   }
 
   Future<int> register(User item, _$AppDatabaseExecutor db) async {
     final map = item.toSqlMap();
     var command = 'REPLACE INTO';
-    if (item.id == 0) {
+    final originalId = item.id;
+    if (originalId == 0) {
       command = 'INSERT INTO';
     }
     final sql =
@@ -838,13 +862,15 @@ class _$UserHelper {
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
     item.id = id;
+
     return id;
   }
 
   void registerBatch(User item, _$AppDatabaseBatchWrapper batch) {
     final map = item.toSqlMap();
     var command = 'REPLACE INTO';
-    if (item.id == 0) {
+    final originalId = item.id;
+    if (originalId == 0) {
       command = 'INSERT INTO';
     }
     final sql =
@@ -853,9 +879,10 @@ class _$UserHelper {
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
       if (item.id == 0) {
-        if (noResult != true && object is int) {
-          item.id = object;
+        if (noResult == true || object is! int) {
+          throw StateError('returned object $object is not int.');
         }
+        item.id = object;
       }
       return object;
     });
@@ -886,6 +913,7 @@ class _$UserHelper {
     return result;
   }
 
+  /// convert map list from sql query to object list
   List<User> mapToObject(List<Map<String, Object?>> mapList) {
     final result = mapList.map((map) => User.fromSqlMap(map)).toList();
     return result;
@@ -996,24 +1024,52 @@ class _$UserHelper {
     );
   }
 
-  Future<int> delete(User item, _$AppDatabaseExecutor db) async {
-    if (item.id == 0) {
-      throw ArgumentError('Cannot delete User with id 0.');
-    }
-
-    final id = await db.delete(
-      tableName,
-      where: '${column.id} = ?',
-      whereArgs: [item.id],
-    );
-    return id;
+  Future<int> delete(
+    _$AppDatabaseExecutor db, {
+    String? where,
+    List<Object?>? whereArgs,
+  }) async {
+    return db.delete(tableName, where: where, whereArgs: whereArgs);
   }
 
-  void deleteBatch(User item, _$AppDatabaseBatchWrapper batch) {
-    if (item.id == 0) {
-      throw ArgumentError('Cannot delete User with id 0.');
-    }
+  Future<void> deleteBatch(
+    _$AppDatabaseBatchWrapper batch, {
+    String? where,
+    List<Object?>? whereArgs,
+  }) async {
+    batch.delete(tableName, where: where, whereArgs: whereArgs);
+  }
 
-    batch.delete(tableName, where: '${column.id} = ?', whereArgs: [item.id]);
+  Future<int> deleteByIds(_$AppDatabaseExecutor db, List<User> itemList) async {
+    final noids = itemList.where((e) => e.id == 0);
+    if (noids.isNotEmpty) {
+      throw ArgumentError(
+        'Cannot delete User because it has unregistered items.',
+      );
+    }
+    final ids = itemList.map((e) => e.id).toSet().toList();
+
+    final count = await db.delete(
+      tableName,
+      where: '${column.id} in (${List.filled(ids.length, '?').join(',')})',
+      whereArgs: ids,
+    );
+    return count;
+  }
+
+  void deleteByIdsBatch(_$AppDatabaseBatchWrapper batch, List<User> itemList) {
+    final noids = itemList.where((e) => e.id == 0);
+    if (noids.isNotEmpty) {
+      throw ArgumentError(
+        'Cannot delete User because it has unregistered items.',
+      );
+    }
+    final ids = itemList.map((e) => e.id).toSet().toList();
+
+    batch.delete(
+      tableName,
+      where: '${column.id} in (${List.filled(ids.length, '?').join(',')})',
+      whereArgs: ids,
+    );
   }
 }

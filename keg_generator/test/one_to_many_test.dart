@@ -96,7 +96,7 @@ void main() async {
     final item3 = Item('ballpoint pen', category: cat);
     expect(appdb.registerItem(item3), throwsStateError);
 
-    await appdb.deleteItem(item1);
+    await appdb.deleteItemByIds([item1]);
   });
 
   test('category is set', () async {
@@ -129,9 +129,9 @@ void main() async {
     expect(item3?.category?.id, cat2.id);
     expect(item3?.category?.name, cat2.name);
 
-    await appdb.deleteItem(item1);
-    await appdb.deleteCategory(cat);
-    await appdb.deleteCategory(cat2);
+    await appdb.deleteItemByIds([item1]);
+    await appdb.deleteCategoryByIds([cat, cat2]);
+    //await appdb.deleteCategory(cat2);
   });
 
   test('transaction test', () async {
@@ -158,8 +158,8 @@ void main() async {
     });
 
     await appdb.transaction((txn) async {
-      await txn.deleteItem(item1);
-      await txn.deleteCategory(cat);
+      await txn.deleteItemByIds([item1]);
+      await txn.deleteCategoryByIds([cat]);
     });
   });
 
@@ -192,8 +192,8 @@ void main() async {
     expect(cat2?.itemList[0].name, item1.name);
 
     final batch3 = appdb.batch();
-    batch3.deleteItem(item1);
-    batch3.deleteCategory(cat);
+    batch3.deleteItemByIds([item1]);
+    batch3.deleteCategoryByIds([cat]);
     await batch3.commit();
 
     final batch4 = appdb.batch();
@@ -281,14 +281,14 @@ void main() async {
     expect(item51?.subCategory, isNull);
 
     final batch = appdb.batch();
-    batch.deleteItem(item1);
-    batch.deleteItem(item2);
-    batch.deleteItem(item3);
-    batch.deleteItem(item4);
-    batch.deleteItem(item5);
-    batch.deleteCategory(cat1);
-    batch.deleteCategory(cat2);
-    batch.deleteCategory(cat3);
+    batch.deleteItemByIds([item1, item2, item3, item4, item5]);
+    // batch.deleteItem(item2);
+    // batch.deleteItem(item3);
+    // batch.deleteItem(item4);
+    // batch.deleteItem(item5);
+    batch.deleteCategoryByIds([cat1, cat2, cat3]);
+    // batch.deleteCategory(cat2);
+    // batch.deleteCategory(cat3);
     await batch.commit(noResult: true);
   });
   /*

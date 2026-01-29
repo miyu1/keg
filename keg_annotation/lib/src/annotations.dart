@@ -52,3 +52,27 @@ class BackLink{
   const BackLink({required this.to, this.order = "id", this.descendant = false});
 }
 
+@Target({TargetKind.field})
+class ManyToMany {
+  /// class of middle table
+  final Type middle;
+  /// field name used to hold id of self class
+  final String self;
+  /// field name used to hold field name in self class which holds the many to many relation
+  /// this field is important when self class has multiple many to many relations with target class
+  final String field; 
+  /// field name used to hold id of target class
+  final String target;
+  /// Field name used to order list. 
+  final String order;
+  /// If true, descendant order, else ascendant
+  final bool descendant;
+
+  const ManyToMany({
+    required this.middle,
+    required this.self,
+    required this.target,
+    this.field = 'field',
+    this.order = "id",
+    this.descendant = false,});
+}

@@ -255,8 +255,13 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       '[List<String> dropKeys = const[]])');
       buffer.writeln('=> ${variableName}Helper.get(id, this, dropKeys);');
       buffer.writeln('');
-      buffer.writeln('@override Future<int> delete$table($table item)');
-      buffer.writeln('=> ${variableName}Helper.delete(item, this);');
+      buffer.writeln('@override Future<int> delete$table({String? where,'
+        'List<Object?>? whereArgs,})');
+      buffer.writeln('=> ${variableName}Helper.delete(this, where: where,'
+        ' whereArgs: whereArgs);');
+      buffer.writeln('');
+      buffer.writeln('@override Future<int> delete${table}ByIds(List<$table> itemsList)');
+      buffer.writeln('=> ${variableName}Helper.deleteByIds(this, itemsList);');
       buffer.writeln('');
     }
 
@@ -327,7 +332,9 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       buffer.writeln('');
       buffer.writeln('Future<$table?> get$table(int id, [List<String> dropKeys = const []]);');
       buffer.writeln('');
-      buffer.writeln('Future<int> delete$table($table item);');
+      buffer.writeln('Future<int> delete$table({String? where, List<Object?>? whereArgs});');
+      buffer.writeln('');      
+      buffer.writeln('Future<int> delete${table}ByIds(List<$table> itemList);');
       buffer.writeln('');
     }
     buffer.writeln('}');
@@ -372,8 +379,11 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
         '@override Future<$table?> get$table(int id, [List<String> dropKeys = const []])',
         '=> appdb.${variableName}Helper.get(id, this, dropKeys);',
         '',
-        '@override Future<int> delete$table($table item)',
-        '=> appdb.${variableName}Helper.delete(item, this);',
+        '@override Future<int> delete$table({String? where, List<Object?>? whereArgs,})',
+        '=> appdb.${variableName}Helper.delete(this, where: where, whereArgs: whereArgs);',
+        '',
+        '@override Future<int> delete${table}ByIds(List<$table> itemList)',
+        '=> appdb.${variableName}Helper.deleteByIds(this, itemList);',
         '',
       ].join('\n'));
     }
@@ -491,8 +501,15 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
         '  }',
         '}'
         '',
-        'void delete$table($table item, [$onCommitArg]) {',
-        ' appdb.${variableName}Helper.deleteBatch(item, this);',
+        'void delete$table({String? where, List<Object?>? whereArgs, $onCommitArg}) {',
+        '  appdb.${variableName}Helper.deleteBatch(this, where: where, whereArgs: whereArgs);',
+        '  if (onCommit != null) {',
+        '    _addCallBack(callBackIndex-1, onCommit);',
+        '  }',
+        '}'
+        '',
+        'void delete${table}ByIds(List<$table> itemList, [$onCommitArg]) {',
+        ' appdb.${variableName}Helper.deleteByIdsBatch(this, itemList);',
         '  if (onCommit != null) {',
         '    _addCallBack(callBackIndex-1, onCommit);',
         '  }',

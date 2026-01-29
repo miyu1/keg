@@ -1,3 +1,5 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'migration1_before.dart';
 
 // **************************************************************************
@@ -25,7 +27,9 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
 
   Future<ItemInfo?> getItemInfo(int id, [List<String> dropKeys = const []]);
 
-  Future<int> deleteItemInfo(ItemInfo item);
+  Future<int> deleteItemInfo({String? where, List<Object?>? whereArgs});
+
+  Future<int> deleteItemInfoByIds(List<ItemInfo> itemList);
 }
 
 class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
@@ -71,8 +75,12 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
       appdb.itemInfoHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteItemInfo(ItemInfo item) =>
-      appdb.itemInfoHelper.delete(item, this);
+  Future<int> deleteItemInfo({String? where, List<Object?>? whereArgs}) =>
+      appdb.itemInfoHelper.delete(this, where: where, whereArgs: whereArgs);
+
+  @override
+  Future<int> deleteItemInfoByIds(List<ItemInfo> itemList) =>
+      appdb.itemInfoHelper.deleteByIds(this, itemList);
 
   // passthrough methods
   @override
@@ -313,11 +321,22 @@ class _$AppDatabaseBatchWrapper implements Batch {
     }
   }
 
-  void deleteItemInfo(
-    ItemInfo item, [
+  void deleteItemInfo({
+    String? where,
+    List<Object?>? whereArgs,
+    Future<Object?> Function(bool? noResult, Object?)? onCommit,
+  }) {
+    appdb.itemInfoHelper.deleteBatch(this, where: where, whereArgs: whereArgs);
+    if (onCommit != null) {
+      _addCallBack(callBackIndex - 1, onCommit);
+    }
+  }
+
+  void deleteItemInfoByIds(
+    List<ItemInfo> itemList, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.itemInfoHelper.deleteBatch(item, this);
+    appdb.itemInfoHelper.deleteByIdsBatch(this, itemList);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -559,8 +578,12 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
       itemInfoHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteItemInfo(ItemInfo item) =>
-      itemInfoHelper.delete(item, this);
+  Future<int> deleteItemInfo({String? where, List<Object?>? whereArgs}) =>
+      itemInfoHelper.delete(this, where: where, whereArgs: whereArgs);
+
+  @override
+  Future<int> deleteItemInfoByIds(List<ItemInfo> itemsList) =>
+      itemInfoHelper.deleteByIds(this, itemsList);
 
   Future<T> transaction<T>(
     Future<T> Function(_$AppDatabaseTransactionWrapper txn) action, {
@@ -825,15 +848,16 @@ class _$ItemInfoHelper {
       throw ArgumentError('Unkown map keys. $keys');
     }
 
-    final item = ItemInfo(name, id: id);
+    final $item = ItemInfo(name, id: id);
 
-    return item;
+    return $item;
   }
 
   Future<int> register(ItemInfo item, _$AppDatabaseExecutor db) async {
     final map = item.toSqlMap();
     var command = 'REPLACE INTO';
-    if (item.id == 0) {
+    final originalId = item.id;
+    if (originalId == 0) {
       command = 'INSERT INTO';
     }
     final sql =
@@ -842,13 +866,15 @@ class _$ItemInfoHelper {
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
     item.id = id;
+
     return id;
   }
 
   void registerBatch(ItemInfo item, _$AppDatabaseBatchWrapper batch) {
     final map = item.toSqlMap();
     var command = 'REPLACE INTO';
-    if (item.id == 0) {
+    final originalId = item.id;
+    if (originalId == 0) {
       command = 'INSERT INTO';
     }
     final sql =
@@ -857,9 +883,10 @@ class _$ItemInfoHelper {
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
       if (item.id == 0) {
-        if (noResult != true && object is int) {
-          item.id = object;
+        if (noResult == true || object is! int) {
+          throw StateError('returned object $object is not int.');
         }
+        item.id = object;
       }
       return object;
     });
@@ -890,6 +917,7 @@ class _$ItemInfoHelper {
     return result;
   }
 
+  /// convert map list from sql query to object list
   List<ItemInfo> mapToObject(List<Map<String, Object?>> mapList) {
     final result = mapList.map((map) => ItemInfo.fromSqlMap(map)).toList();
     return result;
@@ -1000,24 +1028,58 @@ class _$ItemInfoHelper {
     );
   }
 
-  Future<int> delete(ItemInfo item, _$AppDatabaseExecutor db) async {
-    if (item.id == 0) {
-      throw ArgumentError('Cannot delete ItemInfo with id 0.');
-    }
-
-    final id = await db.delete(
-      tableName,
-      where: '${column.id} = ?',
-      whereArgs: [item.id],
-    );
-    return id;
+  Future<int> delete(
+    _$AppDatabaseExecutor db, {
+    String? where,
+    List<Object?>? whereArgs,
+  }) async {
+    return db.delete(tableName, where: where, whereArgs: whereArgs);
   }
 
-  void deleteBatch(ItemInfo item, _$AppDatabaseBatchWrapper batch) {
-    if (item.id == 0) {
-      throw ArgumentError('Cannot delete ItemInfo with id 0.');
-    }
+  Future<void> deleteBatch(
+    _$AppDatabaseBatchWrapper batch, {
+    String? where,
+    List<Object?>? whereArgs,
+  }) async {
+    batch.delete(tableName, where: where, whereArgs: whereArgs);
+  }
 
-    batch.delete(tableName, where: '${column.id} = ?', whereArgs: [item.id]);
+  Future<int> deleteByIds(
+    _$AppDatabaseExecutor db,
+    List<ItemInfo> itemList,
+  ) async {
+    final noids = itemList.where((e) => e.id == 0);
+    if (noids.isNotEmpty) {
+      throw ArgumentError(
+        'Cannot delete ItemInfo because it has unregistered items.',
+      );
+    }
+    final ids = itemList.map((e) => e.id).toSet().toList();
+
+    final count = await db.delete(
+      tableName,
+      where: '${column.id} in (${List.filled(ids.length, '?').join(',')})',
+      whereArgs: ids,
+    );
+    return count;
+  }
+
+  void deleteByIdsBatch(
+    _$AppDatabaseBatchWrapper batch,
+    List<ItemInfo> itemList,
+  ) {
+    final noids = itemList.where((e) => e.id == 0);
+    if (noids.isNotEmpty) {
+      throw ArgumentError(
+        'Cannot delete ItemInfo because it has unregistered items.',
+      );
+    }
+    final ids = itemList.map((e) => e.id).toSet().toList();
+
+    batch.delete(
+      tableName,
+      where: '${column.id} in (${List.filled(ids.length, '?').join(',')})',
+      whereArgs: ids,
+    );
   }
 }
