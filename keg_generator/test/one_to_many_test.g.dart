@@ -1071,6 +1071,7 @@ class _$CategoryHelper {
       map = Map.from(map); // convert to modifiable map
       result[i] = map;
 
+      // ignore: unused_local_variable
       final id = map[column.id] as int;
       //print('Category($id) $dropKeys');
       for (final key in dropKeys) {
@@ -1478,6 +1479,7 @@ class _$ItemHelper {
       map = Map.from(map); // convert to modifiable map
       result[i] = map;
 
+      // ignore: unused_local_variable
       final id = map[column.id] as int;
       //print('Item($id) $dropKeys');
       for (final key in dropKeys) {

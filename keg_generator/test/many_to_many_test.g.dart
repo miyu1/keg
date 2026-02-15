@@ -1513,6 +1513,7 @@ class _$CartHelper {
       map = Map.from(map); // convert to modifiable map
       result[i] = map;
 
+      // ignore: unused_local_variable
       final id = map[column.id] as int;
       //print('Cart($id) $dropKeys');
       for (final key in dropKeys) {
@@ -1980,6 +1981,7 @@ class _$ItemHelper {
       map = Map.from(map); // convert to modifiable map
       result[i] = map;
 
+      // ignore: unused_local_variable
       final id = map[column.id] as int;
       //print('Item($id) $dropKeys');
       for (final key in dropKeys) {
@@ -2378,6 +2380,7 @@ class _$OrderToItemHelper {
       map = Map.from(map); // convert to modifiable map
       result[i] = map;
 
+      // ignore: unused_local_variable
       final id = map[column.id] as int;
       //print('OrderToItem($id) $dropKeys');
       for (final key in dropKeys) {
