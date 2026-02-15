@@ -934,7 +934,7 @@ class _$CategoryHelper {
       params.add('$column ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
-    print('Creating table: $sql');
+    //print('Creating table: $sql');
     if (db != null) {
       await db.execute(sql);
     } else if (batch != null) {
@@ -1072,7 +1072,7 @@ class _$CategoryHelper {
       result[i] = map;
 
       final id = map[column.id] as int;
-      print('Category($id) $dropKeys');
+      //print('Category($id) $dropKeys');
       for (final key in dropKeys) {
         map.remove(key);
       }
@@ -1311,7 +1311,7 @@ class _$ItemHelper {
       params.add('$column ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
-    print('Creating table: $sql');
+    //print('Creating table: $sql');
     if (db != null) {
       await db.execute(sql);
     } else if (batch != null) {
@@ -1479,7 +1479,7 @@ class _$ItemHelper {
       result[i] = map;
 
       final id = map[column.id] as int;
-      print('Item($id) $dropKeys');
+      //print('Item($id) $dropKeys');
       for (final key in dropKeys) {
         map.remove(key);
       }

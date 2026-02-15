@@ -80,7 +80,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     var columnTypes = '{'; // map
 
     for (final field in _fieldMap.values) {
-      if (field.type == .dtBackLink || field.type == .dtManyReference) {
+      if (field.type == _DataType.dtBackLink ||
+          field.type == _DataType.dtManyReference ||
+          field.type == _DataType.dtBackLinkMany) {
         continue;
       }
 
@@ -201,7 +203,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '      params.add(\'\$column \${columnTypes[column]}\');',
       '    }',
       '    final sql = \'CREATE TABLE IF NOT EXISTS \$tableName (\${params.join(\', \')})\';',
-      '    print(\'Creating table: \$sql\');',
+      '    //print(\'Creating table: \$sql\');',
       '    if (db != null) {',
       '      await db.execute(sql);',
       '    } else if (batch != null) {',
@@ -254,7 +256,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     ];
 
     for (final field in _fieldMap.values) {
-      if (field.type == .dtBackLink || field.type == .dtManyReference) {
+      if (field.type == _DataType.dtBackLink ||
+          field.type == _DataType.dtManyReference ||
+          field.type == _DataType.dtBackLinkMany) {
         continue;
       }
 
@@ -319,8 +323,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       } else if (field.constructType == .optional) {
         if (field.type == .dtReference) {
           lines.add('${field.className}? ${field.name};');
-        } else if (field.type == .dtBackLink ||
-            field.type == .dtManyReference) {
+        } else if (field.type == _DataType.dtBackLink ||
+            field.type == _DataType.dtManyReference ||
+            field.type == _DataType.dtBackLinkMany) {
           lines.add(
             'List<${field.className}> ${field.name} = ${field.defaultValue};',
           );
@@ -364,7 +369,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
             '}',
           ]);
         }
-      } else if (field.type == .dtBackLink || field.type == .dtManyReference) {
+      } else if (field.type == _DataType.dtBackLink ||
+          field.type == _DataType.dtManyReference ||
+          field.type == _DataType.dtBackLinkMany) {
         lines.add("map['${field.columnName}'] as List<${field.className}>;");
       } else {
         lines.add("map['${field.columnName}'] as ${field.type.dartType};");
@@ -413,7 +420,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       if (type.isEmpty) {
         type = field.className;
       }
-      if (field.type == .dtBackLink || field.type == .dtManyReference) {
+      if (field.type == _DataType.dtBackLink ||
+          field.type == _DataType.dtManyReference ||
+          field.type == _DataType.dtBackLinkMany) {
         type = 'List<${field.className}>';
       }
       lines.add("\$item.${field.name} = params['${field.name}'] as $type;");
@@ -614,8 +623,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         }
 
         lines.addAll([
-          'final ${field.name}ColumnList = <String>[];'
-              'for (final col in appdb.$middleHelper.columnList) {',
+          'final ${field.name}ColumnList = <String>[];',
+          'for (final col in appdb.$middleHelper.columnList) {',
           '  ${field.name}ColumnList.add(\'\${appdb.$middleHelper.tableName}.\$col as "\${appdb.$middleHelper.tableName}-\$col"\');',
           '}',
           'for (final col in appdb.$varName.columnList) {',
@@ -629,6 +638,35 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           '        WHERE \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.self}} = ? ',
           "        AND \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.field}} ='${field.name}' ",
           "        ORDER BY \${appdb.$varName.tableName}.\${appdb.$varName.column.${manyToMany.order}} $asc''';",
+          '',
+        ]);
+      } else if (field.type == .dtBackLinkMany) {
+        var varName = toLowerCamelCase(field.className);
+        varName = '${varName}Helper';
+        final backLink = field.annotationObject as BackLink;
+        final manyToMany = field.annotationObject2 as _ManyToManyInternal;
+        final middleHelper = '${toLowerCamelCase(manyToMany.middle)}Helper';
+        var asc = 'ASC';
+        if (backLink.descendant) {
+          asc = 'DESC';
+        }
+
+        lines.addAll([
+          'final ${field.name}ColumnList = <String>[];',
+          'for (final col in appdb.$middleHelper.columnList) {',
+          '  ${field.name}ColumnList.add(\'\${appdb.$middleHelper.tableName}.\$col as "\${appdb.$middleHelper.tableName}-\$col"\');',
+          '}',
+          'for (final col in appdb.$varName.columnList) {',
+          '  ${field.name}ColumnList.add(\'\${appdb.$varName.tableName}.\$col as "\${appdb.$varName.tableName}-\$col"\');',
+          '}',
+          "final ${field.name}Sql = '''SELECT \${${field.name}ColumnList.join(', ')} ",
+          '        FROM \${appdb.$middleHelper.tableName} ',
+          '        INNER JOIN \${appdb.$varName.tableName} ',
+          '        ON \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.self}} = ',
+          '        \${appdb.$varName.tableName}.id ',
+          '        WHERE \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.target}} = ? ',
+          "        AND \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.field}} ='${backLink.to}' ",
+          "        ORDER BY \${appdb.$varName.tableName}.\${appdb.$varName.column.${backLink.order}} $asc''';",
           '',
         ]);
       }
@@ -645,7 +683,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '  result[i] = map;',
       '',
       '  final id = map[column.id] as int;',
-      "  print('$className(\$id) \$dropKeys');",
+      "  //print('$className(\$id) \$dropKeys');",
       'for (final key in dropKeys) {',
       '  map.remove(key);',
       '}',
@@ -695,10 +733,11 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           ');',
           '',
         ]);
-      } else if (field.type == .dtManyReference) {
+      } else if (field.type == .dtManyReference || field.type == .dtBackLinkMany) {
         var varName = toLowerCamelCase(field.className);
         varName = '${varName}Helper';
         lines.addAll([
+          "if (!dropKeys.contains('${field.columnName}')) {",
           'batch.rawQuery(',
           '${field.name}Sql,',
           '[id],',
@@ -723,6 +762,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           '  return targetList;',
           '},',
           ');',
+          '}',
           '',
         ]);
       }
@@ -744,7 +784,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       ' final result = mapList.map((map) => $className.fromSqlMap(map)).toList();',
     ]);
     final backLinkFields = _fieldMap.values.where(
-      (field) => field.type == .dtBackLink,
+      (field) => field.type == .dtBackLink
     );
     if (backLinkFields.isNotEmpty) {
       lines.add('for (final object in result){');
@@ -765,35 +805,6 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           '}', // end func
       '',
     ]);
-    // make query statement
-    /*
-    lines.addAll([
-      'String querySql(String? where, String? orderBy, int? limit, int? offset) {',
-      'final allColumnList = <String>[];',
-      'allColumnList.addAll(',
-      "  columnList.map((e) => '\$tableName.\$e',)",
-      ');'
-    ]);
-    for (final field in referenes) {
-      var className = field.className;
-      if (className.endsWith('?')) {
-        className = className.substring(0, className.length - 1);
-      }
-      final variableName = toLowerCamelCase(className);
-      lines.addAll([
-        'allColumnList.addAll(',
-        ' appdb.${variableName}Helper.columnList.map(',
-        "  (e) => ' \${appdb.${variableName}Helper.tableName}.'",
-        '  )', // end of map
-        ');' // end of addAll
-      ]);
-    }
-
-    lines.addAll([
-      "return allColumnList.join(', ');",
-      '}',
-    ]);
-    */
 
     // query
     final queryCommon = [
@@ -1081,59 +1092,94 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         }
         fieldInfo.className = typeName;
 
+        final library = await buildStep.inputLibrary;
         if (fieldInfo.annotationObject is _ManyToManyInternal) {
           // many to many field validation
           final manyToMany = fieldInfo.annotationObject as _ManyToManyInternal;
 
-          final library = await buildStep.inputLibrary;
           if (tableNameList.contains(manyToMany.middle) == false) {
-            final msg = '${element.name}: annotation error. '
-              'class ${manyToMany.middle} is not included in $appDbName';
+            final msg =
+                '${element.name}: annotation error. '
+                'class ${manyToMany.middle} is not included in $appDbName';
             throw InvalidGenerationSourceError(msg);
           }
           final middleElement = library.getClass(manyToMany.middle);
           if (middleElement == null) {
-            final msg = '${element.name}: annotation error. '
-            'class ${manyToMany.middle} not found';
+            final msg =
+                '${element.name}: annotation error. '
+                'class ${manyToMany.middle} not found';
             throw InvalidGenerationSourceError(msg);
           }
-          
-          final middleFieldMap = await _analyzeFields(
-            middleElement,
-            buildStep,
-          );
+
+          final middleFieldMap = await _analyzeFields(middleElement, buildStep);
           final selfField = middleFieldMap[manyToMany.self];
           if (selfField == null) {
-            final msg ='${element.name}: ${fieldInfo.name} annotation error. '
-             'field ${manyToMany.self} not found in class ${manyToMany.middle}';
+            final msg =
+                '${element.name}: ${fieldInfo.name} annotation error. '
+                'field ${manyToMany.self} not found in class ${manyToMany.middle}';
             throw InvalidGenerationSourceError(msg);
           }
           if (selfField.className != element.name) {
-            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
-             'field ${manyToMany.self} type mismatch in class ${manyToMany.middle}';
+            final msg =
+                '${element.name}: ${fieldInfo.name} annotation error. '
+                'field ${manyToMany.self} type mismatch in class ${manyToMany.middle}';
             throw InvalidGenerationSourceError(msg);
           }
           final targetField = middleFieldMap[manyToMany.target];
           if (targetField == null) {
-            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
-             'field ${manyToMany.target} not found in class ${manyToMany.middle}';
+            final msg =
+                '${element.name}: ${fieldInfo.name} annotation error. '
+                'field ${manyToMany.target} not found in class ${manyToMany.middle}';
             throw InvalidGenerationSourceError(msg);
           }
           if (targetField.className != typeName) {
-            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
-             'field ${manyToMany.target} type mismatch in class ${manyToMany.middle}';
+            final msg =
+                '${element.name}: ${fieldInfo.name} annotation error. '
+                'field ${manyToMany.target} type mismatch in class ${manyToMany.middle}';
             throw InvalidGenerationSourceError(msg);
           }
           final fieldField = middleFieldMap[manyToMany.field];
           if (fieldField == null) {
-            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
-              'field ${manyToMany.field} not found in class ${manyToMany.middle}';
+            final msg =
+                '${element.name}: ${fieldInfo.name} annotation error. '
+                'field ${manyToMany.field} not found in class ${manyToMany.middle}';
             throw InvalidGenerationSourceError(msg);
           }
           if (fieldField.type != _DataType.dtString) {
-            final msg = '${element.name}: ${fieldInfo.name} annotation error. '
-              'field ${manyToMany.field} must be String in class ${manyToMany.middle}';
+            final msg =
+                '${element.name}: ${fieldInfo.name} annotation error. '
+                'field ${manyToMany.field} must be String in class ${manyToMany.middle}';
             throw InvalidGenerationSourceError(msg);
+          }
+        } else {
+          // back link validation
+          final backLink = fieldInfo.annotationObject as BackLink;
+
+          final toElement = library.getClass(fieldInfo.className);
+          if (toElement == null) {
+            final msg =
+                '${element.name}: annotation error. '
+                'class ${fieldInfo.className} not found';
+            throw InvalidGenerationSourceError(msg);
+          }
+
+          final toFieldMap = await _analyzeFields(toElement, buildStep);
+          final toField = toFieldMap[backLink.to];
+          if (toField == null) {
+            final msg =
+                '${element.name}: ${fieldInfo.name} annotation error. '
+                'field ${backLink.to} not found in class ${backLink.to}';
+            throw InvalidGenerationSourceError(msg);
+          }
+          if (toField.className != element.name) {
+            final msg =
+                '${element.name}: ${fieldInfo.name} annotation error. '
+                'field ${backLink.to} type mismatch in class ${backLink.to}';
+            throw InvalidGenerationSourceError(msg);
+          }
+          if (toField.type == _DataType.dtManyReference) {
+            type = _DataType.dtBackLinkMany;
+            fieldInfo.annotationObject2 = toField.annotationObject;
           }
         }
       }
@@ -1386,7 +1432,8 @@ enum _DataType {
   dtEnum(dartType: ''),
   dtReference(dartType: ''),
   dtBackLink(dartType: ''),
-  dtManyReference(dartType: '');
+  dtManyReference(dartType: ''),
+  dtBackLinkMany(dartType: '');
 
   const _DataType({required this.dartType});
 
@@ -1408,6 +1455,7 @@ class _FieldInfo {
   //bool isRequired = false;
   ConstructType constructType = .notIncluded;
   Object? annotationObject;
+  Object? annotationObject2;
 }
 
 /// copy of ManyToMany annotation except midle field

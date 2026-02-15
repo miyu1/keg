@@ -1,5 +1,3 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'migration2_after.dart';
 
 // **************************************************************************
@@ -932,7 +930,7 @@ class _$UserHelper {
       params.add('$column ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
-    print('Creating table: $sql');
+    //print('Creating table: $sql');
     if (db != null) {
       await db.execute(sql);
     } else if (batch != null) {
@@ -1064,7 +1062,7 @@ class _$UserHelper {
       result[i] = map;
 
       final id = map[column.id] as int;
-      print('User($id) $dropKeys');
+      //print('User($id) $dropKeys');
       for (final key in dropKeys) {
         map.remove(key);
       }
@@ -1296,7 +1294,7 @@ class _$ItemInfoHelper {
       params.add('$column ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
-    print('Creating table: $sql');
+    //print('Creating table: $sql');
     if (db != null) {
       await db.execute(sql);
     } else if (batch != null) {
@@ -1480,7 +1478,7 @@ class _$ItemInfoHelper {
       result[i] = map;
 
       final id = map[column.id] as int;
-      print('ItemInfo($id) $dropKeys');
+      //print('ItemInfo($id) $dropKeys');
       for (final key in dropKeys) {
         map.remove(key);
       }

@@ -6,16 +6,95 @@ import 'package:test/test.dart';
 
 part 'many_to_many_test.g.dart';
 
+/*
+class ImmutableListWithFetchState<E> implements List<E> {
+  final List<E> _innerList = [];
+  bool isFetched = false;
+
+  ImmutableListWithFetchState(List<E> initial, {this.isFetched = false}) {
+    _innerList.addAll(initial);
+  }
+
+  @override
+  int get length {
+    if (!isFetched) {
+      throw StateError('List is not fetched yet');
+    } 
+    return _innerList.length;
+  }
+
+  @override
+  set length(int newLength) {
+    throw UnimplementedError();
+  }
+
+  @override
+  E operator [](int index) {
+    if (!isFetched) {
+      throw StateError('List is not fetched yet');
+    } 
+    return _innerList[index];
+  }
+
+  @override
+  void operator []=(int index, E value) {
+    throw UnimplementedError();
+  }
+
+  void markFetched() {
+    isFetched = true;
+  }
+
+  @override
+  void add(E value) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void addAll(Iterable<E> iterable) {
+    throw UnimplementedError(); 
+  }
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  Iterable<E> get reversed {
+    if (!isFetched) {
+      throw StateError('List is not fetched yet');
+    }
+    return _innerList.reversed;
+  }
+
+  @override
+  Iterator<E> get iterator {
+    if (!isFetched) {
+      throw StateError('List is not fetched yet');
+    }
+    return _innerList.iterator;
+  }
+
+  @override
+  bool get isEmpty {
+    if (!isFetched) {
+      throw StateError('List is not fetched yet');
+    }
+    return _innerList.isEmpty;
+  }
+
+}
+*/
+
 @table
 class Cart {
   int id;
   String user;
 
-  @ManyToMany(middle: OrderToItem, self: 'order', target: 'item',
+  @ManyToMany(middle: OrderToItem, self: 'cart', target: 'item',
     order: 'name', descendant: true)
   List<Item> itemList = [];
 
-  @ManyToMany(middle: OrderToItem, self: 'order', target: 'item',
+  @ManyToMany(middle: OrderToItem, self: 'cart', target: 'item',
     order: 'name', descendant: true)
   List<Item> itemList2 = [];
 
@@ -31,6 +110,9 @@ class Item {
   int id;
   String name;
 
+  @BackLink(to: 'itemList')
+  List <Cart> orderList = [];
+
   Item(this.name, {this.id = 0});
 
   Map<String, Object?> toSqlMap() => _$ItemHelper.toSqlMap(this);
@@ -41,11 +123,11 @@ class Item {
 @table
 class OrderToItem {
   int id;
-  Cart? order;
+  Cart? cart;
   String field;
   Item? item;
 
-  OrderToItem({required this.order, required this.item, required this.field, this.id = 0});
+  OrderToItem({required this.cart, required this.item, required this.field, this.id = 0});
 
   Map<String, Object?> toSqlMap() => _$OrderToItemHelper.toSqlMap(this);
   factory OrderToItem.fromSqlMap(Map<String, Object?> map) =>
@@ -75,6 +157,14 @@ void main() async {
 
   databaseFactory = databaseFactoryFfi;
   late AppDatabase appdb;
+
+  /*
+  List<String> list1 = ImmutableListWithFetchState([], isFetched: true);
+  if (list1.isEmpty) {
+    print('list1 is empty');
+  }
+  */
+
 
   setUpAll(() async {
     // final path = await getDatabasesPath();
@@ -128,9 +218,17 @@ void main() async {
     expect(cart3?.itemList2.length, 2);
     expect(cart3?.itemList2[0].name, 'Item 4');
     expect(cart3?.itemList2[1].name, 'Item 3');
+    expect(cart3?.itemList[0].orderList, isEmpty);
+    expect(cart3?.itemList[1].orderList, isEmpty);
 
     final result = await appdb.queryOrderToItem();
     expect(result.length, 6);
+
+    // back link
+    final item5 = await appdb.getItem(item1.id);
+    expect(item5, isNotNull);
+    expect(item5?.orderList.length, 1);
+    expect(item5?.orderList[0].user, 'User A');
 
     await appdb.deleteCartByIds([cart]);
     final cart4 = await appdb.getCart(cart.id);
