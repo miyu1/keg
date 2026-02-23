@@ -6,103 +6,25 @@ import 'package:test/test.dart';
 
 part 'many_to_many_test.g.dart';
 
-/*
-class ImmutableListWithFetchState<E> implements List<E> {
-  final List<E> _innerList = [];
-  bool isFetched = false;
-
-  ImmutableListWithFetchState(List<E> initial, {this.isFetched = false}) {
-    _innerList.addAll(initial);
-  }
-
-  @override
-  int get length {
-    if (!isFetched) {
-      throw StateError('List is not fetched yet');
-    } 
-    return _innerList.length;
-  }
-
-  @override
-  set length(int newLength) {
-    throw UnimplementedError();
-  }
-
-  @override
-  E operator [](int index) {
-    if (!isFetched) {
-      throw StateError('List is not fetched yet');
-    } 
-    return _innerList[index];
-  }
-
-  @override
-  void operator []=(int index, E value) {
-    throw UnimplementedError();
-  }
-
-  void markFetched() {
-    isFetched = true;
-  }
-
-  @override
-  void add(E value) {
-    throw UnimplementedError();
-  }
-
-  @override
-  void addAll(Iterable<E> iterable) {
-    throw UnimplementedError(); 
-  }
-
-  @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-
-  @override
-  Iterable<E> get reversed {
-    if (!isFetched) {
-      throw StateError('List is not fetched yet');
-    }
-    return _innerList.reversed;
-  }
-
-  @override
-  Iterator<E> get iterator {
-    if (!isFetched) {
-      throw StateError('List is not fetched yet');
-    }
-    return _innerList.iterator;
-  }
-
-  @override
-  bool get isEmpty {
-    if (!isFetched) {
-      throw StateError('List is not fetched yet');
-    }
-    return _innerList.isEmpty;
-  }
-
-}
-*/
-
+// class name order is reserved word in sql. test if reserved word is usable as class name.
 @table
-class Cart {
+class Order {
   int id;
   String user;
 
-  @ManyToMany(middle: OrderToItem, self: 'cart', target: 'item',
+  @ManyToMany(middle: OrderToItem, self: 'order', target: 'item',
     order: 'name', descendant: true)
   List<Item> itemList = [];
 
-  @ManyToMany(middle: OrderToItem, self: 'cart', target: 'item',
+  @ManyToMany(middle: OrderToItem, self: 'order', target: 'item',
     order: 'name', descendant: true)
   List<Item> itemList2 = [];
 
-  Cart(this.user, {this.id = 0});
+  Order(this.user, {this.id = 0});
 
-  Map<String, Object?> toSqlMap() => _$CartHelper.toSqlMap(this);
-  factory Cart.fromSqlMap(Map<String, Object?> map) =>
-      _$CartHelper.fromSqlMap(map);
+  Map<String, Object?> toSqlMap() => _$OrderHelper.toSqlMap(this);
+  factory Order.fromSqlMap(Map<String, Object?> map) =>
+      _$OrderHelper.fromSqlMap(map);
 }
 
 @table
@@ -111,7 +33,7 @@ class Item {
   String name;
 
   @BackLink(to: 'itemList')
-  List <Cart> orderList = [];
+  List <Order> orderList = [];
 
   Item(this.name, {this.id = 0});
 
@@ -123,11 +45,11 @@ class Item {
 @table
 class OrderToItem {
   int id;
-  Cart? cart;
+  Order? order;
   String field;
   Item? item;
 
-  OrderToItem({required this.cart, required this.item, required this.field, this.id = 0});
+  OrderToItem({required this.order, required this.item, required this.field, this.id = 0});
 
   Map<String, Object?> toSqlMap() => _$OrderToItemHelper.toSqlMap(this);
   factory OrderToItem.fromSqlMap(Map<String, Object?> map) =>
@@ -135,7 +57,7 @@ class OrderToItem {
 }
 
 
-@KegDatabase(tables: [Cart, Item, OrderToItem])
+@KegDatabase(tables: [Order, Item, OrderToItem])
 class AppDatabase extends _$AppDatabase {
   @override
   Future<String> getPathToOpen() async {
@@ -157,14 +79,6 @@ void main() async {
 
   databaseFactory = databaseFactoryFfi;
   late AppDatabase appdb;
-
-  /*
-  List<String> list1 = ImmutableListWithFetchState([], isFetched: true);
-  if (list1.isEmpty) {
-    print('list1 is empty');
-  }
-  */
-
 
   setUpAll(() async {
     // final path = await getDatabasesPath();
@@ -196,30 +110,30 @@ void main() async {
     await appdb.registerItem(item3);
     await appdb.registerItem(item4);
 
-    final cart = Cart('User A');
-    cart.itemList.addAll([item1]);
-    cart.itemList2.addAll([item3, item4]);
-    final cart2 = Cart('User B');
-    cart2.itemList.addAll([item3, item4]);
+    final order = Order('User A');
+    order.itemList.addAll([item1]);
+    order.itemList2.addAll([item3, item4]);
+    final order2 = Order('User B');
+    order2.itemList.addAll([item3, item4]);
 
-    await appdb.registerCart(cart);
-    await appdb.registerCart(cart2);
+    await appdb.registerOrder(order);
+    await appdb.registerOrder(order2);
 
     // update
-    cart.itemList.add(item2);
-    await appdb.registerCart(cart);
+    order.itemList.add(item2);
+    await appdb.registerOrder(order);
 
-    final cart3 = await appdb.getCart(cart.id);
-    expect(cart3, isNotNull);
-    expect(cart3?.user, 'User A');
-    expect(cart3?.itemList.length, 2);
-    expect(cart3?.itemList[0].name, 'Item 2');
-    expect(cart3?.itemList[1].name, 'Item 1');
-    expect(cart3?.itemList2.length, 2);
-    expect(cart3?.itemList2[0].name, 'Item 4');
-    expect(cart3?.itemList2[1].name, 'Item 3');
-    expect(cart3?.itemList[0].orderList, isEmpty);
-    expect(cart3?.itemList[1].orderList, isEmpty);
+    final order3 = await appdb.getOrder(order.id);
+    expect(order3, isNotNull);
+    expect(order3?.user, 'User A');
+    expect(order3?.itemList.length, 2);
+    expect(order3?.itemList[0].name, 'Item 2');
+    expect(order3?.itemList[1].name, 'Item 1');
+    expect(order3?.itemList2.length, 2);
+    expect(order3?.itemList2[0].name, 'Item 4');
+    expect(order3?.itemList2[1].name, 'Item 3');
+    expect(order3?.itemList[0].orderList, isEmpty);
+    expect(order3?.itemList[1].orderList, isEmpty);
 
     final result = await appdb.queryOrderToItem();
     expect(result.length, 6);
@@ -230,16 +144,16 @@ void main() async {
     expect(item5?.orderList.length, 1);
     expect(item5?.orderList[0].user, 'User A');
 
-    await appdb.deleteCartByIds([cart]);
-    final cart4 = await appdb.getCart(cart.id);
-    expect(cart4, isNull);
+    await appdb.deleteOrderByIds([order]);
+    final order4 = await appdb.getOrder(order.id);
+    expect(order4, isNull);
 
     final result2 = await appdb.queryOrderToItem();
     expect(result2.length, 2);
 
-    await appdb.deleteCart(where: '${appdb.cartHelper.column.user} = ?', whereArgs: ['User B']);
-    final cart5 = await appdb.getCart(cart2.id);
-    expect(cart5, isNull);
+    await appdb.deleteOrder(where: '${appdb.orderHelper.column.user} = ?', whereArgs: ['User B']);
+    final order5 = await appdb.getOrder(order2.id);
+    expect(order5, isNull);
 
     final result3 = await appdb.queryOrderToItem();
     expect(result3.length, 0);

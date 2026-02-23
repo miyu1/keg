@@ -27,7 +27,7 @@ enum Color {
 class ItemInfo {
   int id;
   String name;
-  int stock;
+  int order; // reserved keyword of sqlite
   Color color;
   double weight;
   bool isActive;
@@ -37,7 +37,7 @@ class ItemInfo {
     this.name, {
     required this.weight,
     required this.color,
-    this.stock = 0,
+    this.order = 0,
     this.isActive = true,
     this.id = 0,
   });
@@ -92,9 +92,12 @@ void main() async {
 
     final map1 = user1.toSqlMap();
     expect(map1.length, 1);
-    expect(map1.containsKey(userHelper.column.name), true);
-    expect(map1.containsKey(userHelper.column.id), false);
-    expect(map1[userHelper.column.name], 'John');
+    //expect(map1.containsKey(userHelper.column.name), true);
+    //expect(map1.containsKey(userHelper.column.id), false);
+    //expect(map1[userHelper.column.name], 'John');
+    expect(map1.containsKey(unquote(userHelper.column.name)), true);
+    expect(map1.containsKey(unquote(userHelper.column.id)), false);
+    expect(map1[unquote(userHelper.column.name)], 'John');
 
     final user2 = User.fromSqlMap(map1);
     expect(user1.name, user2.name);
@@ -104,24 +107,24 @@ void main() async {
     final helper = appdb.itemInfoHelper;
 
     // table and fields are snake_case
-    expect(helper.tableName, 'item_info');
-    expect(helper.column.isActive, 'is_active');
+    expect(helper.tableName, '"item_info"');
+    expect(helper.column.isActive, '"is_active"');
 
 
-    final item1 = ItemInfo('pen', weight:5.5, color: Color.red, stock: 10,
+    final item1 = ItemInfo('pen', weight:5.5, color: Color.red, order: 10,
       isActive: false, id: 10);
     final map2 = item1.toSqlMap();
     expect(map2.length, 7);
-    expect(map2[helper.column.color], 'red');
-    expect(map2[helper.column.isActive], 0);
-    expect(map2[helper.column.created], item1.created.toUtc().microsecondsSinceEpoch);
+    expect(map2[unquote(helper.column.color)], 'red');
+    expect(map2[unquote(helper.column.isActive)], 0);
+    expect(map2[unquote(helper.column.created)], item1.created.toUtc().microsecondsSinceEpoch);
 
     final item2 = ItemInfo.fromSqlMap(map2);
     expect(item2.id, item1.id);
     expect(item2.name, item1.name);
     expect(item2.weight, item1.weight);
     expect(item2.color, item1.color);
-    expect(item2.stock, item1.stock);
+    expect(item2.order, item1.order);
     expect(item2.isActive, item1.isActive);
     expect(item2.created, item1.created);
   });
@@ -220,7 +223,7 @@ void main() async {
 
   test('insert/delete item', () async {
     final item1 = ItemInfo('pen', weight: 8.5, color: .red,
-      stock: 10, isActive: true, id: 10);
+      order: 10, isActive: true, id: 10);
 
     await appdb.registerItemInfo(item1);
     final result1 = await appdb.queryItemInfo();
@@ -229,7 +232,7 @@ void main() async {
     expect(result1[0].id, 10);
 
     final item2 = ItemInfo('blue pen', weight: 12.5, color: .blue,
-      stock: 30, isActive: false, id: 10);
+      order: 30, isActive: false, id: 10);
     await appdb.registerItemInfo(item2);
     final result2 = await appdb.queryItemInfo();
 
@@ -238,10 +241,35 @@ void main() async {
     expect(result2[0].name, item2.name);
     expect(result2[0].weight, item2.weight);
     expect(result2[0].color, item2.color);
-    expect(result2[0].stock, item2.stock);
+    expect(result2[0].order, item2.order);
     expect(result2[0].isActive, item2.isActive);
     expect(result2[0].created, item2.created);
 
     await appdb.deleteItemInfoByIds([item2]);
   });
+
+  test('query item', () async {
+    final item1 = ItemInfo('pen', weight: 8.5, color: .red,
+      order: 10, isActive: true);
+    final item2 = ItemInfo('blue pen', weight: 12.5, color: .blue,
+      order: 30, isActive: false);
+
+    await appdb.registerItemInfo(item1);
+    await appdb.registerItemInfo(item2);
+
+    final result1 = await appdb.queryItemInfo(
+      where: '${appdb.itemInfoHelper.column.order} = 10',
+    );
+    expect(result1.length, 1);
+    expect(result1[0].name, item1.name);
+
+    await appdb.deleteItemInfoByIds([item1, item2]);
+  });
+}
+
+String unquote(String s) {
+  if (s.startsWith('"') && s.endsWith('"')) {
+    return s.substring(1, s.length - 1);
+  }
+  return s;
 }
