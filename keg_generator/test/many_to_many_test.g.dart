@@ -10,13 +10,13 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
   @override
   _$AppDatabaseBatchWrapper batch();
 
-  /// Insert or update Cart.
+  /// Insert or update Order.
   /// If id is 0, insert and sets id to generated value.
   /// If specified id already exists in table, update the record.
   /// If specified id does not exist in table, insert with the id.
-  Future<int> registerCart(Cart item);
+  Future<int> registerOrder(Order item);
 
-  Future<List<Cart>> queryCart({
+  Future<List<Order>> queryOrder({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
@@ -25,11 +25,11 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
     List<String> dropKeys = const [],
   });
 
-  Future<Cart?> getCart(int id, [List<String> dropKeys = const []]);
+  Future<Order?> getOrder(int id, [List<String> dropKeys = const []]);
 
-  Future<int> deleteCart({String? where, List<Object?>? whereArgs});
+  Future<int> deleteOrder({String? where, List<Object?>? whereArgs});
 
-  Future<int> deleteCartByIds(List<Cart> itemList);
+  Future<int> deleteOrderByIds(List<Order> itemList);
 
   /// Insert or update Item.
   /// If id is 0, insert and sets id to generated value.
@@ -94,17 +94,18 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   }
 
   @override
-  Future<int> registerCart(Cart item) => appdb.cartHelper.register(item, this);
+  Future<int> registerOrder(Order item) =>
+      appdb.orderHelper.register(item, this);
 
   @override
-  Future<List<Cart>> queryCart({
+  Future<List<Order>> queryOrder({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
     int? limit,
     int? offset,
     List<String> dropKeys = const [],
-  }) => appdb.cartHelper.query(
+  }) => appdb.orderHelper.query(
     this,
     where: where,
     whereArgs: whereArgs,
@@ -115,16 +116,16 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   );
 
   @override
-  Future<Cart?> getCart(int id, [List<String> dropKeys = const []]) =>
-      appdb.cartHelper.get(id, this, dropKeys);
+  Future<Order?> getOrder(int id, [List<String> dropKeys = const []]) =>
+      appdb.orderHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteCart({String? where, List<Object?>? whereArgs}) =>
-      appdb.cartHelper.delete(this, where: where, whereArgs: whereArgs);
+  Future<int> deleteOrder({String? where, List<Object?>? whereArgs}) =>
+      appdb.orderHelper.delete(this, where: where, whereArgs: whereArgs);
 
   @override
-  Future<int> deleteCartByIds(List<Cart> itemList) =>
-      appdb.cartHelper.deleteByIds(this, itemList);
+  Future<int> deleteOrderByIds(List<Order> itemList) =>
+      appdb.orderHelper.deleteByIds(this, itemList);
 
   @override
   Future<int> registerItem(Item item) => appdb.itemHelper.register(item, this);
@@ -390,17 +391,17 @@ class _$AppDatabaseBatchWrapper implements Batch {
     return result;
   }
 
-  void registerCart(
-    Cart item, [
+  void registerOrder(
+    Order item, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.cartHelper.registerBatch(item, this);
+    appdb.orderHelper.registerBatch(item, this);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
   }
 
-  void queryCart({
+  void queryOrder({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
@@ -409,7 +410,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     List<String> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.cartHelper.queryBatch(
+    appdb.orderHelper.queryBatch(
       this,
       where: where,
       whereArgs: whereArgs,
@@ -423,33 +424,33 @@ class _$AppDatabaseBatchWrapper implements Batch {
     }
   }
 
-  void getCart(
+  void getOrder(
     int id, {
     List<String> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.cartHelper.getBatch(id, this, dropKeys);
+    appdb.orderHelper.getBatch(id, this, dropKeys);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
   }
 
-  void deleteCart({
+  void deleteOrder({
     String? where,
     List<Object?>? whereArgs,
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.cartHelper.deleteBatch(this, where: where, whereArgs: whereArgs);
+    appdb.orderHelper.deleteBatch(this, where: where, whereArgs: whereArgs);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
   }
 
-  void deleteCartByIds(
-    List<Cart> itemList, [
+  void deleteOrderByIds(
+    List<Order> itemList, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.cartHelper.deleteByIdsBatch(this, itemList);
+    appdb.orderHelper.deleteByIdsBatch(this, itemList);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -753,7 +754,7 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   @override
   late Database database;
 
-  late final cartHelper = _$CartHelper(this);
+  late final orderHelper = _$OrderHelper(this);
   late final itemHelper = _$ItemHelper(this);
   late final orderToItemHelper = _$OrderToItemHelper(this);
 
@@ -778,7 +779,7 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
 
   Future<void> onCreate(Database db, int version) async {
     final batch = db.batch();
-    await cartHelper.onCreate(version, batch: batch);
+    await orderHelper.onCreate(version, batch: batch);
     await itemHelper.onCreate(version, batch: batch);
     await orderToItemHelper.onCreate(version, batch: batch);
     await batch.commit();
@@ -786,7 +787,7 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
 
   Future<void> onUpgrade(Database db, int oldVersion, int newVersion) async {
     final batch = db.batch();
-    await cartHelper.onUpgrade(oldVersion, newVersion, batch: batch);
+    await orderHelper.onUpgrade(oldVersion, newVersion, batch: batch);
     await itemHelper.onUpgrade(oldVersion, newVersion, batch: batch);
     await orderToItemHelper.onUpgrade(oldVersion, newVersion, batch: batch);
     await batch.commit();
@@ -800,22 +801,22 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
     // do nothing
   }
 
-  /// Insert or update Cart.
+  /// Insert or update Order.
   /// If id is 0, insert and sets id to generated value.
   /// If specified id already exists in table, update the record.
   /// If specified id does not exist in table, insert with the id.
   @override
-  Future<int> registerCart(Cart item) => cartHelper.register(item, this);
+  Future<int> registerOrder(Order item) => orderHelper.register(item, this);
 
   @override
-  Future<List<Cart>> queryCart({
+  Future<List<Order>> queryOrder({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
     int? limit,
     int? offset,
     List<String> dropKeys = const [],
-  }) => cartHelper.query(
+  }) => orderHelper.query(
     this,
     where: where,
     whereArgs: whereArgs,
@@ -826,16 +827,16 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   );
 
   @override
-  Future<Cart?> getCart(int id, [List<String> dropKeys = const []]) =>
-      cartHelper.get(id, this, dropKeys);
+  Future<Order?> getOrder(int id, [List<String> dropKeys = const []]) =>
+      orderHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteCart({String? where, List<Object?>? whereArgs}) =>
-      cartHelper.delete(this, where: where, whereArgs: whereArgs);
+  Future<int> deleteOrder({String? where, List<Object?>? whereArgs}) =>
+      orderHelper.delete(this, where: where, whereArgs: whereArgs);
 
   @override
-  Future<int> deleteCartByIds(List<Cart> itemsList) =>
-      cartHelper.deleteByIds(this, itemsList);
+  Future<int> deleteOrderByIds(List<Order> itemsList) =>
+      orderHelper.deleteByIds(this, itemsList);
 
   /// Insert or update Item.
   /// If id is 0, insert and sets id to generated value.
@@ -1065,18 +1066,18 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
 // TableGenerator
 // **************************************************************************
 
-class _$CartHelper {
-  final String tableName = 'cart';
-  final column = (id: 'id', user: 'user');
+class _$OrderHelper {
+  final String tableName = '"order"';
+  final column = (id: '"id"', user: '"user"');
   final columnTypes = {
-    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
-    'user': "TEXT NOT NULL DEFAULT ''",
+    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+    'user': 'TEXT NOT NULL DEFAULT \'\'',
   };
   final columnList = ['id', 'user'];
 
   _$AppDatabase appdb;
 
-  _$CartHelper(this.appdb);
+  _$OrderHelper(this.appdb);
 
   static final v1ColumnList = ['id', 'user'];
   final columnListByVersion = {1: v1ColumnList};
@@ -1095,11 +1096,11 @@ class _$CartHelper {
       columnList.addAll(oneColumnList);
     }
     if (columnList.isEmpty) {
-      throw UnsupportedError("No columns defined for Cart version $version");
+      throw UnsupportedError("No columns defined for Order version $version");
     }
     var params = [];
     for (final column in columnList) {
-      params.add('$column ${columnTypes[column]}');
+      params.add('"$column" ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
     //print('Creating table: $sql');
@@ -1134,7 +1135,7 @@ class _$CartHelper {
     }
     for (final column in columnList) {
       final sql =
-          'ALTER TABLE $tableName ADD COLUMN $column ${columnTypes[column]}';
+          'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
       print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
@@ -1144,49 +1145,67 @@ class _$CartHelper {
     }
   }
 
-  static Map<String, Object?> toSqlMap(Cart item) {
+  static Map<String, Object?> toSqlMap(Order item) {
     final values = <String, Object?>{};
 
     if (item.id != 0) {
-      values["id"] = item.id;
+      values['id'] = item.id;
     }
 
-    values["user"] = item.user;
+    values['user'] = item.user;
 
     return values;
   }
 
-  static Cart fromSqlMap(Map<String, Object?> map) {
+  static String _unquote(String s) {
+    if (s.startsWith('"') && s.endsWith('"')) {
+      return s.substring(1, s.length - 1);
+    }
+    return s;
+  }
+
+  /// unquote column names in map for fromSqlMap
+  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {
+    final newMap = <String, Object?>{};
+    for (final entry in map.entries) {
+      var key = _unquote(entry.key);
+      newMap[key] = entry.value;
+    }
+    return newMap;
+  }
+
+  static Order fromSqlMap(Map<String, Object?> map) {
+    map = _unquoteMap(map);
     final keys = map.keys.toSet();
     final params = <String, Object>{};
-    if (!keys.contains("user")) {
+    if (!keys.contains('user')) {
       throw ArgumentError("Missing required key user in map");
     }
 
     var id = 0;
     if (keys.contains('id')) {
       id = map['id'] as int;
-      keys.remove("id");
+      keys.remove('id');
     }
 
     final user = map['user'] as String;
-    keys.remove("user");
+    keys.remove('user');
 
     if (keys.contains('item_list')) {
       params['itemList'] = map['item_list'] as List<Item>;
-      keys.remove("item_list");
+      keys.remove('item_list');
     }
 
     if (keys.contains('item_list2')) {
       params['itemList2'] = map['item_list2'] as List<Item>;
-      keys.remove("item_list2");
+      keys.remove('item_list2');
     }
 
     if (keys.isNotEmpty) {
       throw ArgumentError('Unkown map keys. $keys');
     }
 
-    final $item = Cart(user, id: id);
+    final $item = Order(user, id: id);
 
     if (params['itemList'] != null) {
       $item.itemList = params['itemList'] as List<Item>;
@@ -1197,7 +1216,7 @@ class _$CartHelper {
     return $item;
   }
 
-  bool compareItemList(Cart item1, Set<int> set2) {
+  bool compareItemList(Order item1, Set<int> set2) {
     if (item1.itemList.length != set2.length) {
       return false;
     }
@@ -1210,7 +1229,7 @@ class _$CartHelper {
     return true;
   }
 
-  bool compareItemList2(Cart item1, Set<int> set2) {
+  bool compareItemList2(Order item1, Set<int> set2) {
     if (item1.itemList2.length != set2.length) {
       return false;
     }
@@ -1224,13 +1243,13 @@ class _$CartHelper {
   }
 
   Future<void> registerItemList(
-    Cart item,
+    Order item,
     _$AppDatabaseExecutor executor,
   ) async {
     final batch = executor.batch();
     for (final target in item.itemList) {
       Map<String, Object?> middleMap = {};
-      middleMap[appdb.orderToItemHelper.column.cart] = item;
+      middleMap[appdb.orderToItemHelper.column.order] = item;
       middleMap[appdb.orderToItemHelper.column.item] = target;
       middleMap[appdb.orderToItemHelper.column.field] = 'itemList';
       final middle = OrderToItem.fromSqlMap(middleMap);
@@ -1240,13 +1259,13 @@ class _$CartHelper {
   }
 
   Future<void> registerItemList2(
-    Cart item,
+    Order item,
     _$AppDatabaseExecutor executor,
   ) async {
     final batch = executor.batch();
     for (final target in item.itemList2) {
       Map<String, Object?> middleMap = {};
-      middleMap[appdb.orderToItemHelper.column.cart] = item;
+      middleMap[appdb.orderToItemHelper.column.order] = item;
       middleMap[appdb.orderToItemHelper.column.item] = target;
       middleMap[appdb.orderToItemHelper.column.field] = 'itemList2';
       final middle = OrderToItem.fromSqlMap(middleMap);
@@ -1255,27 +1274,27 @@ class _$CartHelper {
     await batch.commit();
   }
 
-  Future<int> register(Cart item, _$AppDatabaseExecutor db) async {
+  Future<int> register(Order item, _$AppDatabaseExecutor db) async {
     final itemListNoids = item.itemList.where((e) => e.id == 0);
     if (itemListNoids.isNotEmpty) {
       throw ArgumentError(
-        'Cannot register Cart because itemList has unregistered items.',
+        'Cannot register Order because itemList has unregistered items.',
       );
     }
     if (item.itemList.length != item.itemList.toSet().length) {
       throw ArgumentError(
-        'Cannot register Cart because itemList has duplicate items.',
+        'Cannot register Order because itemList has duplicate items.',
       );
     }
     final itemList2Noids = item.itemList2.where((e) => e.id == 0);
     if (itemList2Noids.isNotEmpty) {
       throw ArgumentError(
-        'Cannot register Cart because itemList2 has unregistered items.',
+        'Cannot register Order because itemList2 has unregistered items.',
       );
     }
     if (item.itemList2.length != item.itemList2.toSet().length) {
       throw ArgumentError(
-        'Cannot register Cart because itemList2 has duplicate items.',
+        'Cannot register Order because itemList2 has duplicate items.',
       );
     }
     final map = item.toSqlMap();
@@ -1284,8 +1303,9 @@ class _$CartHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
@@ -1299,7 +1319,7 @@ class _$CartHelper {
       final existingMiddleList = await executor.query(
         appdb.orderToItemHelper.tableName,
         where:
-            '${appdb.orderToItemHelper.column.cart} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
+            '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
         whereArgs: [originalId, 'itemList'],
       );
       final existingTargetIds = existingMiddleList
@@ -1310,7 +1330,7 @@ class _$CartHelper {
         // delete middle records
         await executor.deleteOrderToItem(
           where:
-              '${appdb.orderToItemHelper.column.cart} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
+              '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
           whereArgs: [originalId, 'itemList'],
         );
       } else {
@@ -1328,7 +1348,7 @@ class _$CartHelper {
       final existingMiddleList = await executor.query(
         appdb.orderToItemHelper.tableName,
         where:
-            '${appdb.orderToItemHelper.column.cart} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
+            '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
         whereArgs: [originalId, 'itemList2'],
       );
       final existingTargetIds = existingMiddleList
@@ -1339,7 +1359,7 @@ class _$CartHelper {
         // delete middle records
         await executor.deleteOrderToItem(
           where:
-              '${appdb.orderToItemHelper.column.cart} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
+              '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
           whereArgs: [originalId, 'itemList2'],
         );
       } else {
@@ -1354,27 +1374,27 @@ class _$CartHelper {
     return id;
   }
 
-  void registerBatch(Cart item, _$AppDatabaseBatchWrapper batch) {
+  void registerBatch(Order item, _$AppDatabaseBatchWrapper batch) {
     final itemListNoids = item.itemList.where((e) => e.id == 0);
     if (itemListNoids.isNotEmpty) {
       throw ArgumentError(
-        'Cannot register Cart because itemList has unregistered items.',
+        'Cannot register Order because itemList has unregistered items.',
       );
     }
     if (item.itemList.length != item.itemList.toSet().length) {
       throw ArgumentError(
-        'Cannot register Cart because itemList has duplicate items.',
+        'Cannot register Order because itemList has duplicate items.',
       );
     }
     final itemList2Noids = item.itemList2.where((e) => e.id == 0);
     if (itemList2Noids.isNotEmpty) {
       throw ArgumentError(
-        'Cannot register Cart because itemList2 has unregistered items.',
+        'Cannot register Order because itemList2 has unregistered items.',
       );
     }
     if (item.itemList2.length != item.itemList2.toSet().length) {
       throw ArgumentError(
-        'Cannot register Cart because itemList2 has duplicate items.',
+        'Cannot register Order because itemList2 has duplicate items.',
       );
     }
     final map = item.toSqlMap();
@@ -1383,8 +1403,9 @@ class _$CartHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
@@ -1402,7 +1423,7 @@ class _$CartHelper {
         final existingMiddleList = await executor.query(
           appdb.orderToItemHelper.tableName,
           where:
-              '${appdb.orderToItemHelper.column.cart} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
+              '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
           whereArgs: [originalId, 'itemList'],
         );
         final existingTargetIds = existingMiddleList
@@ -1413,7 +1434,7 @@ class _$CartHelper {
           // delete middle records
           await executor.deleteOrderToItem(
             where:
-                '${appdb.orderToItemHelper.column.cart} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
+                '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
             whereArgs: [originalId, 'itemList'],
           );
         } else {
@@ -1431,7 +1452,7 @@ class _$CartHelper {
         final existingMiddleList = await executor.query(
           appdb.orderToItemHelper.tableName,
           where:
-              '${appdb.orderToItemHelper.column.cart} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
+              '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
           whereArgs: [originalId, 'itemList2'],
         );
         final existingTargetIds = existingMiddleList
@@ -1442,7 +1463,7 @@ class _$CartHelper {
           // delete middle records
           await executor.deleteOrderToItem(
             where:
-                '${appdb.orderToItemHelper.column.cart} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
+                '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
             whereArgs: [originalId, 'itemList2'],
           );
         } else {
@@ -1465,12 +1486,12 @@ class _$CartHelper {
     final itemListColumnList = <String>[];
     for (final col in appdb.orderToItemHelper.columnList) {
       itemListColumnList.add(
-        '${appdb.orderToItemHelper.tableName}.$col as "${appdb.orderToItemHelper.tableName}-$col"',
+        '${appdb.orderToItemHelper.tableName}."$col" as "${_unquote(appdb.orderToItemHelper.tableName)}-$col"',
       );
     }
     for (final col in appdb.itemHelper.columnList) {
       itemListColumnList.add(
-        '${appdb.itemHelper.tableName}.$col as "${appdb.itemHelper.tableName}-$col"',
+        '${appdb.itemHelper.tableName}."$col" as "${_unquote(appdb.itemHelper.tableName)}-$col"',
       );
     }
     final itemListSql =
@@ -1478,20 +1499,20 @@ class _$CartHelper {
         FROM ${appdb.orderToItemHelper.tableName} 
         INNER JOIN ${appdb.itemHelper.tableName} 
         ON ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.item} = 
-        ${appdb.itemHelper.tableName}.id 
-        WHERE ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.cart} = ? 
+        ${appdb.itemHelper.tableName}."id" 
+        WHERE ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.order} = ? 
         AND ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.field} ='itemList' 
         ORDER BY ${appdb.itemHelper.tableName}.${appdb.itemHelper.column.name} DESC''';
 
     final itemList2ColumnList = <String>[];
     for (final col in appdb.orderToItemHelper.columnList) {
       itemList2ColumnList.add(
-        '${appdb.orderToItemHelper.tableName}.$col as "${appdb.orderToItemHelper.tableName}-$col"',
+        '${appdb.orderToItemHelper.tableName}."$col" as "${_unquote(appdb.orderToItemHelper.tableName)}-$col"',
       );
     }
     for (final col in appdb.itemHelper.columnList) {
       itemList2ColumnList.add(
-        '${appdb.itemHelper.tableName}.$col as "${appdb.itemHelper.tableName}-$col"',
+        '${appdb.itemHelper.tableName}."$col" as "${_unquote(appdb.itemHelper.tableName)}-$col"',
       );
     }
     final itemList2Sql =
@@ -1499,8 +1520,8 @@ class _$CartHelper {
         FROM ${appdb.orderToItemHelper.tableName} 
         INNER JOIN ${appdb.itemHelper.tableName} 
         ON ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.item} = 
-        ${appdb.itemHelper.tableName}.id 
-        WHERE ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.cart} = ? 
+        ${appdb.itemHelper.tableName}."id" 
+        WHERE ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.order} = ? 
         AND ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.field} ='itemList2' 
         ORDER BY ${appdb.itemHelper.tableName}.${appdb.itemHelper.column.name} DESC''';
 
@@ -1514,10 +1535,10 @@ class _$CartHelper {
       result[i] = map;
 
       // ignore: unused_local_variable
-      final id = map[column.id] as int;
-      //print('Cart($id) $dropKeys');
+      final id = map['id'] as int;
+      //print('Order($id) $dropKeys');
       for (final key in dropKeys) {
-        map.remove(key);
+        map.remove(_unquote(key));
       }
       if (!dropKeys.contains('item_list')) {
         batch.rawQuery(itemListSql, [id], (noResult, object) async {
@@ -1529,9 +1550,9 @@ class _$CartHelper {
           for (final middleMap in middleList) {
             final targetMap = <String, Object?>{};
             for (final key in middleMap.keys) {
-              if (key.startsWith('${appdb.itemHelper.tableName}-')) {
+              if (key.startsWith('${_unquote(appdb.itemHelper.tableName)}-')) {
                 final newKey = key.substring(
-                  appdb.itemHelper.tableName.length + 1,
+                  _unquote(appdb.itemHelper.tableName).length + 1,
                 );
                 targetMap[newKey] = middleMap[key];
               }
@@ -1554,9 +1575,9 @@ class _$CartHelper {
           for (final middleMap in middleList) {
             final targetMap = <String, Object?>{};
             for (final key in middleMap.keys) {
-              if (key.startsWith('${appdb.itemHelper.tableName}-')) {
+              if (key.startsWith('${_unquote(appdb.itemHelper.tableName)}-')) {
                 final newKey = key.substring(
-                  appdb.itemHelper.tableName.length + 1,
+                  _unquote(appdb.itemHelper.tableName).length + 1,
                 );
                 targetMap[newKey] = middleMap[key];
               }
@@ -1575,12 +1596,12 @@ class _$CartHelper {
   }
 
   /// convert map list from sql query to object list
-  List<Cart> mapToObject(List<Map<String, Object?>> mapList) {
-    final result = mapList.map((map) => Cart.fromSqlMap(map)).toList();
+  List<Order> mapToObject(List<Map<String, Object?>> mapList) {
+    final result = mapList.map((map) => Order.fromSqlMap(map)).toList();
     return result;
   }
 
-  Future<List<Cart>> query(
+  Future<List<Order>> query(
     _$AppDatabaseExecutor db, {
     String? where,
     List<Object?>? whereArgs,
@@ -1635,7 +1656,7 @@ class _$CartHelper {
     );
   }
 
-  Future<Cart?> get(
+  Future<Order?> get(
     int id,
     _$AppDatabaseExecutor db, [
     List<String> dropKeys = const [],
@@ -1693,12 +1714,12 @@ class _$CartHelper {
     // delete many to many middle records
     await db.deleteOrderToItem(
       where:
-          '${appdb.orderToItemHelper.column.cart} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
+          '${appdb.orderToItemHelper.column.order} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
       whereArgs: whereArgs,
     );
     await db.deleteOrderToItem(
       where:
-          '${appdb.orderToItemHelper.column.cart} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
+          '${appdb.orderToItemHelper.column.order} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
       whereArgs: whereArgs,
     );
     return db.delete(tableName, where: where, whereArgs: whereArgs);
@@ -1712,36 +1733,37 @@ class _$CartHelper {
     // delete many to many middle records
     batch.deleteOrderToItem(
       where:
-          '${appdb.orderToItemHelper.column.cart} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
+          '${appdb.orderToItemHelper.column.order} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
       whereArgs: whereArgs,
     );
     batch.deleteOrderToItem(
       where:
-          '${appdb.orderToItemHelper.column.cart} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
+          '${appdb.orderToItemHelper.column.order} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
       whereArgs: whereArgs,
     );
     batch.delete(tableName, where: where, whereArgs: whereArgs);
   }
 
-  Future<int> deleteByIds(_$AppDatabaseExecutor db, List<Cart> itemList) async {
+  Future<int> deleteByIds(
+    _$AppDatabaseExecutor db,
+    List<Order> itemList,
+  ) async {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete Cart because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete Order because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
     // delete many to many middle records for itemList
     await db.deleteOrderToItem(
       where:
-          '${appdb.orderToItemHelper.column.cart} in (${List.filled(ids.length, '?').join(',')})',
+          '${appdb.orderToItemHelper.column.order} in (${List.filled(ids.length, '?').join(',')})',
       whereArgs: ids,
     );
     // delete many to many middle records for itemList2
     await db.deleteOrderToItem(
       where:
-          '${appdb.orderToItemHelper.column.cart} in (${List.filled(ids.length, '?').join(',')})',
+          '${appdb.orderToItemHelper.column.order} in (${List.filled(ids.length, '?').join(',')})',
       whereArgs: ids,
     );
 
@@ -1753,25 +1775,23 @@ class _$CartHelper {
     return count;
   }
 
-  void deleteByIdsBatch(_$AppDatabaseBatchWrapper batch, List<Cart> itemList) {
+  void deleteByIdsBatch(_$AppDatabaseBatchWrapper batch, List<Order> itemList) {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete Cart because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete Order because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
     // delete many to many middle records for itemList
     batch.deleteOrderToItem(
       where:
-          '${appdb.orderToItemHelper.column.cart} in (${List.filled(ids.length, '?').join(',')})',
+          '${appdb.orderToItemHelper.column.order} in (${List.filled(ids.length, '?').join(',')})',
       whereArgs: ids,
     );
     // delete many to many middle records for itemList2
     batch.deleteOrderToItem(
       where:
-          '${appdb.orderToItemHelper.column.cart} in (${List.filled(ids.length, '?').join(',')})',
+          '${appdb.orderToItemHelper.column.order} in (${List.filled(ids.length, '?').join(',')})',
       whereArgs: ids,
     );
 
@@ -1784,11 +1804,11 @@ class _$CartHelper {
 }
 
 class _$ItemHelper {
-  final String tableName = 'item';
-  final column = (id: 'id', name: 'name');
+  final String tableName = '"item"';
+  final column = (id: '"id"', name: '"name"');
   final columnTypes = {
-    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
-    'name': "TEXT NOT NULL DEFAULT ''",
+    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+    'name': 'TEXT NOT NULL DEFAULT \'\'',
   };
   final columnList = ['id', 'name'];
 
@@ -1817,7 +1837,7 @@ class _$ItemHelper {
     }
     var params = [];
     for (final column in columnList) {
-      params.add('$column ${columnTypes[column]}');
+      params.add('"$column" ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
     //print('Creating table: $sql');
@@ -1852,7 +1872,7 @@ class _$ItemHelper {
     }
     for (final column in columnList) {
       final sql =
-          'ALTER TABLE $tableName ADD COLUMN $column ${columnTypes[column]}';
+          'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
       print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
@@ -1866,33 +1886,51 @@ class _$ItemHelper {
     final values = <String, Object?>{};
 
     if (item.id != 0) {
-      values["id"] = item.id;
+      values['id'] = item.id;
     }
 
-    values["name"] = item.name;
+    values['name'] = item.name;
 
     return values;
   }
 
+  static String _unquote(String s) {
+    if (s.startsWith('"') && s.endsWith('"')) {
+      return s.substring(1, s.length - 1);
+    }
+    return s;
+  }
+
+  /// unquote column names in map for fromSqlMap
+  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {
+    final newMap = <String, Object?>{};
+    for (final entry in map.entries) {
+      var key = _unquote(entry.key);
+      newMap[key] = entry.value;
+    }
+    return newMap;
+  }
+
   static Item fromSqlMap(Map<String, Object?> map) {
+    map = _unquoteMap(map);
     final keys = map.keys.toSet();
     final params = <String, Object>{};
-    if (!keys.contains("name")) {
+    if (!keys.contains('name')) {
       throw ArgumentError("Missing required key name in map");
     }
 
     var id = 0;
     if (keys.contains('id')) {
       id = map['id'] as int;
-      keys.remove("id");
+      keys.remove('id');
     }
 
     final name = map['name'] as String;
-    keys.remove("name");
+    keys.remove('name');
 
     if (keys.contains('order_list')) {
-      params['orderList'] = map['order_list'] as List<Cart>;
-      keys.remove("order_list");
+      params['orderList'] = map['order_list'] as List<Order>;
+      keys.remove('order_list');
     }
 
     if (keys.isNotEmpty) {
@@ -1902,7 +1940,7 @@ class _$ItemHelper {
     final $item = Item(name, id: id);
 
     if (params['orderList'] != null) {
-      $item.orderList = params['orderList'] as List<Cart>;
+      $item.orderList = params['orderList'] as List<Order>;
     }
     return $item;
   }
@@ -1914,8 +1952,9 @@ class _$ItemHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
@@ -1931,8 +1970,9 @@ class _$ItemHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
@@ -1954,23 +1994,23 @@ class _$ItemHelper {
     final orderListColumnList = <String>[];
     for (final col in appdb.orderToItemHelper.columnList) {
       orderListColumnList.add(
-        '${appdb.orderToItemHelper.tableName}.$col as "${appdb.orderToItemHelper.tableName}-$col"',
+        '${appdb.orderToItemHelper.tableName}."$col" as "${_unquote(appdb.orderToItemHelper.tableName)}-$col"',
       );
     }
-    for (final col in appdb.cartHelper.columnList) {
+    for (final col in appdb.orderHelper.columnList) {
       orderListColumnList.add(
-        '${appdb.cartHelper.tableName}.$col as "${appdb.cartHelper.tableName}-$col"',
+        '${appdb.orderHelper.tableName}."$col" as "${_unquote(appdb.orderHelper.tableName)}-$col"',
       );
     }
     final orderListSql =
         '''SELECT ${orderListColumnList.join(', ')} 
         FROM ${appdb.orderToItemHelper.tableName} 
-        INNER JOIN ${appdb.cartHelper.tableName} 
-        ON ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.cart} = 
-        ${appdb.cartHelper.tableName}.id 
+        INNER JOIN ${appdb.orderHelper.tableName} 
+        ON ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.order} = 
+        ${appdb.orderHelper.tableName}."id" 
         WHERE ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.item} = ? 
         AND ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.field} ='itemList' 
-        ORDER BY ${appdb.cartHelper.tableName}.${appdb.cartHelper.column.id} ASC''';
+        ORDER BY ${appdb.orderHelper.tableName}.${appdb.orderHelper.column.id} ASC''';
 
     var result = mapList;
     result = result.toList(); // convert to modifiable list
@@ -1982,10 +2022,10 @@ class _$ItemHelper {
       result[i] = map;
 
       // ignore: unused_local_variable
-      final id = map[column.id] as int;
+      final id = map['id'] as int;
       //print('Item($id) $dropKeys');
       for (final key in dropKeys) {
-        map.remove(key);
+        map.remove(_unquote(key));
       }
       if (!dropKeys.contains('order_list')) {
         batch.rawQuery(orderListSql, [id], (noResult, object) async {
@@ -1993,18 +2033,18 @@ class _$ItemHelper {
             throw StateError('returned object $object is not expected type.');
           }
           final middleList = object;
-          final targetList = <Cart>[];
+          final targetList = <Order>[];
           for (final middleMap in middleList) {
             final targetMap = <String, Object?>{};
             for (final key in middleMap.keys) {
-              if (key.startsWith('${appdb.cartHelper.tableName}-')) {
+              if (key.startsWith('${_unquote(appdb.orderHelper.tableName)}-')) {
                 final newKey = key.substring(
-                  appdb.cartHelper.tableName.length + 1,
+                  _unquote(appdb.orderHelper.tableName).length + 1,
                 );
                 targetMap[newKey] = middleMap[key];
               }
             }
-            final target = Cart.fromSqlMap(targetMap);
+            final target = Order.fromSqlMap(targetMap);
             targetList.add(target);
           }
           map['order_list'] = targetList;
@@ -2147,9 +2187,7 @@ class _$ItemHelper {
   Future<int> deleteByIds(_$AppDatabaseExecutor db, List<Item> itemList) async {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete Item because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete Item because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
@@ -2164,9 +2202,7 @@ class _$ItemHelper {
   void deleteByIdsBatch(_$AppDatabaseBatchWrapper batch, List<Item> itemList) {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete Item because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete Item because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
@@ -2179,21 +2215,26 @@ class _$ItemHelper {
 }
 
 class _$OrderToItemHelper {
-  final String tableName = 'order_to_item';
-  final column = (id: 'id', cart: 'cart_id', field: 'field', item: 'item_id');
+  final String tableName = '"order_to_item"';
+  final column = (
+    id: '"id"',
+    order: '"order_id"',
+    field: '"field"',
+    item: '"item_id"',
+  );
   final columnTypes = {
-    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
-    'cart_id': "INTEGER REFERENCES cart(id)",
-    'field': "TEXT NOT NULL DEFAULT ''",
-    'item_id': "INTEGER REFERENCES item(id)",
+    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+    'order_id': 'INTEGER REFERENCES "order"("id")',
+    'field': 'TEXT NOT NULL DEFAULT \'\'',
+    'item_id': 'INTEGER REFERENCES "item"("id")',
   };
-  final columnList = ['id', 'cart_id', 'field', 'item_id'];
+  final columnList = ['id', 'order_id', 'field', 'item_id'];
 
   _$AppDatabase appdb;
 
   _$OrderToItemHelper(this.appdb);
 
-  static final v1ColumnList = ['id', 'cart_id', 'field', 'item_id'];
+  static final v1ColumnList = ['id', 'order_id', 'field', 'item_id'];
   final columnListByVersion = {1: v1ColumnList};
 
   /// on create database table
@@ -2216,7 +2257,7 @@ class _$OrderToItemHelper {
     }
     var params = [];
     for (final column in columnList) {
-      params.add('$column ${columnTypes[column]}');
+      params.add('"$column" ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
     //print('Creating table: $sql');
@@ -2251,7 +2292,7 @@ class _$OrderToItemHelper {
     }
     for (final column in columnList) {
       final sql =
-          'ALTER TABLE $tableName ADD COLUMN $column ${columnTypes[column]}';
+          'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
       print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
@@ -2265,24 +2306,24 @@ class _$OrderToItemHelper {
     final values = <String, Object?>{};
 
     if (item.id != 0) {
-      values["id"] = item.id;
+      values['id'] = item.id;
     }
 
-    if (item.cart != null) {
-      final cartId = item.cart!.id;
-      if (cartId != 0) {
-        values["cart_id"] = cartId;
+    if (item.order != null) {
+      final orderId = item.order!.id;
+      if (orderId != 0) {
+        values['order_id'] = orderId;
       } else {
-        throw StateError('OrderToItem.cart.id is 0.');
+        throw StateError('OrderToItem.order.id is 0.');
       }
     }
 
-    values["field"] = item.field;
+    values['field'] = item.field;
 
     if (item.item != null) {
       final itemId = item.item!.id;
       if (itemId != 0) {
-        values["item_id"] = itemId;
+        values['item_id'] = itemId;
       } else {
         throw StateError('OrderToItem.item.id is 0.');
       }
@@ -2291,38 +2332,56 @@ class _$OrderToItemHelper {
     return values;
   }
 
-  static OrderToItem fromSqlMap(Map<String, Object?> map) {
-    final keys = map.keys.toSet();
-    if (!keys.contains("cart_id")) {
-      throw ArgumentError("Missing required key cart_id in map");
+  static String _unquote(String s) {
+    if (s.startsWith('"') && s.endsWith('"')) {
+      return s.substring(1, s.length - 1);
     }
-    if (!keys.contains("field")) {
+    return s;
+  }
+
+  /// unquote column names in map for fromSqlMap
+  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {
+    final newMap = <String, Object?>{};
+    for (final entry in map.entries) {
+      var key = _unquote(entry.key);
+      newMap[key] = entry.value;
+    }
+    return newMap;
+  }
+
+  static OrderToItem fromSqlMap(Map<String, Object?> map) {
+    map = _unquoteMap(map);
+    final keys = map.keys.toSet();
+    if (!keys.contains('order_id')) {
+      throw ArgumentError("Missing required key order_id in map");
+    }
+    if (!keys.contains('field')) {
       throw ArgumentError("Missing required key field in map");
     }
-    if (!keys.contains("item_id")) {
+    if (!keys.contains('item_id')) {
       throw ArgumentError("Missing required key item_id in map");
     }
 
     var id = 0;
     if (keys.contains('id')) {
       id = map['id'] as int;
-      keys.remove("id");
+      keys.remove('id');
     }
 
-    final cart = map['cart_id'] as Cart?;
-    keys.remove("cart_id");
+    final order = map['order_id'] as Order?;
+    keys.remove('order_id');
 
     final field = map['field'] as String;
-    keys.remove("field");
+    keys.remove('field');
 
     final item = map['item_id'] as Item?;
-    keys.remove("item_id");
+    keys.remove('item_id');
 
     if (keys.isNotEmpty) {
       throw ArgumentError('Unkown map keys. $keys');
     }
 
-    final $item = OrderToItem(id: id, cart: cart, field: field, item: item);
+    final $item = OrderToItem(id: id, order: order, field: field, item: item);
 
     return $item;
   }
@@ -2334,8 +2393,9 @@ class _$OrderToItemHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
@@ -2351,8 +2411,9 @@ class _$OrderToItemHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
@@ -2381,17 +2442,17 @@ class _$OrderToItemHelper {
       result[i] = map;
 
       // ignore: unused_local_variable
-      final id = map[column.id] as int;
+      final id = map['id'] as int;
       //print('OrderToItem($id) $dropKeys');
       for (final key in dropKeys) {
-        map.remove(key);
+        map.remove(_unquote(key));
       }
-      final cartId = map['cart_id'] as int?;
-      if (cartId != null) {
-        batch.getCart(
-          cartId,
+      final orderId = map['order_id'] as int?;
+      if (orderId != null) {
+        batch.getOrder(
+          orderId,
           onCommit: (noResult, object) async {
-            map['cart_id'] = object;
+            map['order_id'] = object;
             return object;
           },
         );
@@ -2545,9 +2606,7 @@ class _$OrderToItemHelper {
   ) async {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete OrderToItem because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete OrderToItem because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
@@ -2565,9 +2624,7 @@ class _$OrderToItemHelper {
   ) {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete OrderToItem because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete OrderToItem because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 

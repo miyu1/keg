@@ -90,7 +90,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         final msg = '$className: field ${field.name} undetermined type';
         throw InvalidGenerationSourceError(msg);
       }
-      columnRecord += "${field.name}:'${field.columnName}', ";
+      columnRecord += "${field.name}:'\"${field.columnName}\"', ";
       if (!oldColumnList.contains(field.columnName)) {
         columnList += "'${field.columnName}', ";
       }
@@ -118,20 +118,20 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           className = className.substring(0, className.length - 1);
         }
         className = toSnakeCase(className);
-        dbTypeStr += ' REFERENCES $className(id)';
+        dbTypeStr += ' REFERENCES "$className"("id")';
       } else {
         dbTypeStr += ' NOT NULL';
         dbTypeStr += switch (field.type) {
           .dtInteger => ' DEFAULT 0',
           .dtDouble => ' DEFAULT 0.0',
-          .dtString => " DEFAULT ''",
+          .dtString => " DEFAULT \\'\\'",
           .dtBool => ' DEFAULT 0',
           .dtDateTime => ' DEFAULT 0',
-          .dtEnum => " DEFAULT '\${${field.className}.values[0].name}'",
+          .dtEnum => " DEFAULT \\'\${${field.className}.values[0].name}\\'",
           _ => '',
         };
       }
-      columnTypes += '\'${field.columnName}\':"$dbTypeStr", ';
+      columnTypes += "'${field.columnName}':'$dbTypeStr', ";
     }
     var fullColumnList = columnList.substring(1);
     columnRecord += ')';
@@ -143,7 +143,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     final lines = <String>[
       'class _\$${className}Helper {',
-      '  final String tableName = \'$tableName\';',
+      "  final String tableName = '\"$tableName\"';",
       '  final column = $columnRecord;',
       '  final columnTypes = $columnTypes;',
       '  final columnList = $fullColumnList;',
@@ -200,7 +200,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '    }',
       '    var params = [];',
       '    for (final column in columnList) {',
-      '      params.add(\'\$column \${columnTypes[column]}\');',
+      '      params.add(\'"\$column" \${columnTypes[column]}\');',
       '    }',
       '    final sql = \'CREATE TABLE IF NOT EXISTS \$tableName (\${params.join(\', \')})\';',
       '    //print(\'Creating table: \$sql\');',
@@ -230,7 +230,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '      columnList.addAll(newColumnList);',
       '    }',
       '    for (final column in columnList) {',
-      '      final sql = \'ALTER TABLE \$tableName ADD COLUMN \$column \${columnTypes[column]}\';',
+      '      final sql = \'ALTER TABLE \$tableName ADD COLUMN "\$column" \${columnTypes[column]}\';',
       '      print(\'Altering table: \$sql\');',
       '      if (db != null) {',
       '        await db.execute(sql);',
@@ -276,7 +276,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       if (field.name == 'id') {
         lines.addAll([
           'if (item.id != 0) {',
-          '  values["${field.columnName}"] = $valueStr;',
+          "  values['${field.columnName}'] = $valueStr;",
           '}',
         ]);
       } else if (field.type == .dtReference) {
@@ -284,23 +284,47 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           'if (item.${field.name} != null) {'
               'final ${field.name}Id = $valueStr;',
           'if (${field.name}Id != 0) {',
-          '  values["${field.columnName}"] = ${field.name}Id;',
+          "  values['${field.columnName}'] = ${field.name}Id;",
           '} else {',
           "  throw StateError('$className.${field.name}.id is 0.');"
               '}',
           '}',
         ]);
       } else {
-        lines.add('values["${field.columnName}"] = $valueStr;');
+        lines.add("values['${field.columnName}'] = $valueStr;");
       }
       lines.add('');
     }
     lines.add('    return values;');
     lines.add('  }');
 
+    // unquote column names in map for fromSqlMap
+    lines.addAll([
+      '',
+      'static String _unquote(String s) {',
+      '  if (s.startsWith(\'"\') && s.endsWith(\'"\')) {',
+      '    return s.substring(1, s.length - 1);',
+      '  }',
+      '  return s;',
+      '}',
+      '', 
+      '  /// unquote column names in map for fromSqlMap',
+      '  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {',
+      '    final newMap = <String, Object?>{};',
+      '    for (final entry in map.entries) {',
+      '      var key = _unquote(entry.key);',
+      '      newMap[key] = entry.value;',
+      '    }',
+      '    return newMap;',
+      '  }',
+    ]);
+
     // Generate the fromSqlMap method
-    lines.add('static $className fromSqlMap(Map<String, Object?> map) {');
-    lines.add('  final keys = map.keys.toSet();');
+    lines.addAll([
+      'static $className fromSqlMap(Map<String, Object?> map) {',
+      '  map = _unquoteMap(map);',
+      '  final keys = map.keys.toSet();'
+    ]);
     if (_fieldMap.values.any((field) => field.constructType == .notIncluded)) {
       lines.add(' final params = <String, Object>{};');
     }
@@ -309,7 +333,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     for (final field in _fieldMap.values.where(
       (field) => field.constructType == .required,
     )) {
-      lines.add('if (!keys.contains("${field.columnName}")) {');
+      lines.add("if (!keys.contains('${field.columnName}')) {");
       lines.add(
         '  throw ArgumentError("Missing required key ${field.columnName} in map");',
       );
@@ -376,7 +400,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       } else {
         lines.add("map['${field.columnName}'] as ${field.type.dartType};");
       }
-      lines.add('keys.remove("${field.columnName}");');
+      lines.add("keys.remove('${field.columnName}');");
 
       if (field.constructType != .required) {
         lines.add('}');
@@ -513,7 +537,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       'if (originalId == 0) {',
       "  command = 'INSERT INTO';",
       '}',
-      "final sql = '\$command \$tableName (\${map.keys.join(',')}) VALUES (\${List.filled(map.length, '?').join(', ')})';",
+      'final keys = map.keys.map((e) => \'"\$e"\').toList();',
+      "final sql = '\$command \$tableName (\${keys.join(',')}) VALUES (\${List.filled(map.length, '?').join(', ')})';",
       "// print('register sql: \$sql');",
       "// print('args: \${map.values.toList()}');",
     ]);
@@ -625,16 +650,16 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         lines.addAll([
           'final ${field.name}ColumnList = <String>[];',
           'for (final col in appdb.$middleHelper.columnList) {',
-          '  ${field.name}ColumnList.add(\'\${appdb.$middleHelper.tableName}.\$col as "\${appdb.$middleHelper.tableName}-\$col"\');',
+          '  ${field.name}ColumnList.add(\'\${appdb.$middleHelper.tableName}."\$col" as "\${_unquote(appdb.$middleHelper.tableName)}-\$col"\');',
           '}',
           'for (final col in appdb.$varName.columnList) {',
-          '  ${field.name}ColumnList.add(\'\${appdb.$varName.tableName}.\$col as "\${appdb.$varName.tableName}-\$col"\');',
+          '  ${field.name}ColumnList.add(\'\${appdb.$varName.tableName}."\$col" as "\${_unquote(appdb.$varName.tableName)}-\$col"\');',
           '}',
           "final ${field.name}Sql = '''SELECT \${${field.name}ColumnList.join(', ')} ",
           '        FROM \${appdb.$middleHelper.tableName} ',
           '        INNER JOIN \${appdb.$varName.tableName} ',
           '        ON \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.target}} = ',
-          '        \${appdb.$varName.tableName}.id ',
+          '        \${appdb.$varName.tableName}."id" ',
           '        WHERE \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.self}} = ? ',
           "        AND \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.field}} ='${field.name}' ",
           "        ORDER BY \${appdb.$varName.tableName}.\${appdb.$varName.column.${manyToMany.order}} $asc''';",
@@ -654,16 +679,16 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         lines.addAll([
           'final ${field.name}ColumnList = <String>[];',
           'for (final col in appdb.$middleHelper.columnList) {',
-          '  ${field.name}ColumnList.add(\'\${appdb.$middleHelper.tableName}.\$col as "\${appdb.$middleHelper.tableName}-\$col"\');',
+          '  ${field.name}ColumnList.add(\'\${appdb.$middleHelper.tableName}."\$col" as "\${_unquote(appdb.$middleHelper.tableName)}-\$col"\');',
           '}',
           'for (final col in appdb.$varName.columnList) {',
-          '  ${field.name}ColumnList.add(\'\${appdb.$varName.tableName}.\$col as "\${appdb.$varName.tableName}-\$col"\');',
+          '  ${field.name}ColumnList.add(\'\${appdb.$varName.tableName}."\$col" as "\${_unquote(appdb.$varName.tableName)}-\$col"\');',
           '}',
           "final ${field.name}Sql = '''SELECT \${${field.name}ColumnList.join(', ')} ",
           '        FROM \${appdb.$middleHelper.tableName} ',
           '        INNER JOIN \${appdb.$varName.tableName} ',
           '        ON \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.self}} = ',
-          '        \${appdb.$varName.tableName}.id ',
+          '        \${appdb.$varName.tableName}."id" ',
           '        WHERE \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.target}} = ? ',
           "        AND \${appdb.$middleHelper.tableName}.\${appdb.$middleHelper.column.${manyToMany.field}} ='${backLink.to}' ",
           "        ORDER BY \${appdb.$varName.tableName}.\${appdb.$varName.column.${backLink.order}} $asc''';",
@@ -683,10 +708,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '  result[i] = map;',
       '',
       '  // ignore: unused_local_variable',
-      '  final id = map[column.id] as int;',
+      "  final id = map['id'] as int;",
       "  //print('$className(\$id) \$dropKeys');",
       'for (final key in dropKeys) {',
-      '  map.remove(key);',
+      '  map.remove(_unquote(key));',
       '}',
     ]);
 
@@ -723,8 +748,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           "where:'\${appdb.$varName.column.${backLink.to}} = ?',",
           'whereArgs: [id],',
           "orderBy: '\${appdb.$varName.column.${backLink.order}} $asc',",
-          'dropKeys: [appdb.$varName.column.${backLink.to}],'
-              'onCommit: (noResult, object) async {',
+          'dropKeys: [appdb.$varName.column.${backLink.to}],',
+          'onCommit: (noResult, object) async {',
           'if(noResult == true || object is! List<${field.className}>) {',
           "  throw StateError('returned object \$object is not expected type.');",
           '}',
@@ -751,8 +776,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           '  for (final middleMap in middleList) {',
           '    final targetMap = <String, Object?>{};',
           '    for (final key in middleMap.keys) {',
-          "      if (key.startsWith('\${appdb.$varName.tableName}-')) {",
-          "        final newKey = key.substring(appdb.$varName.tableName.length + 1);",
+          "      if (key.startsWith('\${_unquote(appdb.$varName.tableName)}-')) {",
+          "        final newKey = key.substring(_unquote(appdb.$varName.tableName).length + 1);",  
           '        targetMap[newKey] = middleMap[key];',
           '      }',
           '    }',
@@ -890,7 +915,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       'final noids = itemList.where((e) => e.id == 0);',
       'if (noids.isNotEmpty) {',
       '  throw ArgumentError(',
-      "    'Cannot delete $className because it has unregistered items.'",
+      "    'Cannot delete $className because id is 0.'",
       '  );',
       '}',
       'final ids = itemList.map((e) => e.id).toSet().toList();',

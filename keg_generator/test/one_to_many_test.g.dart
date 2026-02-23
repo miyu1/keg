@@ -896,11 +896,11 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
 // **************************************************************************
 
 class _$CategoryHelper {
-  final String tableName = 'category';
-  final column = (id: 'id', name: 'name');
+  final String tableName = '"category"';
+  final column = (id: '"id"', name: '"name"');
   final columnTypes = {
-    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
-    'name': "TEXT NOT NULL DEFAULT ''",
+    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+    'name': 'TEXT NOT NULL DEFAULT \'\'',
   };
   final columnList = ['id', 'name'];
 
@@ -931,7 +931,7 @@ class _$CategoryHelper {
     }
     var params = [];
     for (final column in columnList) {
-      params.add('$column ${columnTypes[column]}');
+      params.add('"$column" ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
     //print('Creating table: $sql');
@@ -966,7 +966,7 @@ class _$CategoryHelper {
     }
     for (final column in columnList) {
       final sql =
-          'ALTER TABLE $tableName ADD COLUMN $column ${columnTypes[column]}';
+          'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
       print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
@@ -980,33 +980,51 @@ class _$CategoryHelper {
     final values = <String, Object?>{};
 
     if (item.id != 0) {
-      values["id"] = item.id;
+      values['id'] = item.id;
     }
 
-    values["name"] = item.name;
+    values['name'] = item.name;
 
     return values;
   }
 
+  static String _unquote(String s) {
+    if (s.startsWith('"') && s.endsWith('"')) {
+      return s.substring(1, s.length - 1);
+    }
+    return s;
+  }
+
+  /// unquote column names in map for fromSqlMap
+  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {
+    final newMap = <String, Object?>{};
+    for (final entry in map.entries) {
+      var key = _unquote(entry.key);
+      newMap[key] = entry.value;
+    }
+    return newMap;
+  }
+
   static Category fromSqlMap(Map<String, Object?> map) {
+    map = _unquoteMap(map);
     final keys = map.keys.toSet();
-    if (!keys.contains("name")) {
+    if (!keys.contains('name')) {
       throw ArgumentError("Missing required key name in map");
     }
 
     var id = 0;
     if (keys.contains('id')) {
       id = map['id'] as int;
-      keys.remove("id");
+      keys.remove('id');
     }
 
     final name = map['name'] as String;
-    keys.remove("name");
+    keys.remove('name');
 
     List<Item> itemList = const [];
     if (keys.contains('item_list')) {
       itemList = map['item_list'] as List<Item>;
-      keys.remove("item_list");
+      keys.remove('item_list');
     }
 
     if (keys.isNotEmpty) {
@@ -1025,8 +1043,9 @@ class _$CategoryHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
@@ -1042,8 +1061,9 @@ class _$CategoryHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
@@ -1072,10 +1092,10 @@ class _$CategoryHelper {
       result[i] = map;
 
       // ignore: unused_local_variable
-      final id = map[column.id] as int;
+      final id = map['id'] as int;
       //print('Category($id) $dropKeys');
       for (final key in dropKeys) {
-        map.remove(key);
+        map.remove(_unquote(key));
       }
       batch.queryItem(
         where: '${appdb.itemHelper.column.category} = ?',
@@ -1234,9 +1254,7 @@ class _$CategoryHelper {
   ) async {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete Category because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete Category because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
@@ -1254,9 +1272,7 @@ class _$CategoryHelper {
   ) {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete Category because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete Category because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
@@ -1269,18 +1285,18 @@ class _$CategoryHelper {
 }
 
 class _$ItemHelper {
-  final String tableName = 'item';
+  final String tableName = '"item"';
   final column = (
-    id: 'id',
-    name: 'name',
-    category: 'category_id',
-    subCategory: 'sub_category_id',
+    id: '"id"',
+    name: '"name"',
+    category: '"category_id"',
+    subCategory: '"sub_category_id"',
   );
   final columnTypes = {
-    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
-    'name': "TEXT NOT NULL DEFAULT ''",
-    'category_id': "INTEGER REFERENCES category(id)",
-    'sub_category_id': "INTEGER REFERENCES category(id)",
+    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+    'name': 'TEXT NOT NULL DEFAULT \'\'',
+    'category_id': 'INTEGER REFERENCES "category"("id")',
+    'sub_category_id': 'INTEGER REFERENCES "category"("id")',
   };
   final columnList = ['id', 'name', 'category_id', 'sub_category_id'];
 
@@ -1309,7 +1325,7 @@ class _$ItemHelper {
     }
     var params = [];
     for (final column in columnList) {
-      params.add('$column ${columnTypes[column]}');
+      params.add('"$column" ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
     //print('Creating table: $sql');
@@ -1344,7 +1360,7 @@ class _$ItemHelper {
     }
     for (final column in columnList) {
       final sql =
-          'ALTER TABLE $tableName ADD COLUMN $column ${columnTypes[column]}';
+          'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
       print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
@@ -1358,15 +1374,15 @@ class _$ItemHelper {
     final values = <String, Object?>{};
 
     if (item.id != 0) {
-      values["id"] = item.id;
+      values['id'] = item.id;
     }
 
-    values["name"] = item.name;
+    values['name'] = item.name;
 
     if (item.category != null) {
       final categoryId = item.category!.id;
       if (categoryId != 0) {
-        values["category_id"] = categoryId;
+        values['category_id'] = categoryId;
       } else {
         throw StateError('Item.category.id is 0.');
       }
@@ -1375,7 +1391,7 @@ class _$ItemHelper {
     if (item.subCategory != null) {
       final subCategoryId = item.subCategory!.id;
       if (subCategoryId != 0) {
-        values["sub_category_id"] = subCategoryId;
+        values['sub_category_id'] = subCategoryId;
       } else {
         throw StateError('Item.subCategory.id is 0.');
       }
@@ -1384,26 +1400,44 @@ class _$ItemHelper {
     return values;
   }
 
+  static String _unquote(String s) {
+    if (s.startsWith('"') && s.endsWith('"')) {
+      return s.substring(1, s.length - 1);
+    }
+    return s;
+  }
+
+  /// unquote column names in map for fromSqlMap
+  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {
+    final newMap = <String, Object?>{};
+    for (final entry in map.entries) {
+      var key = _unquote(entry.key);
+      newMap[key] = entry.value;
+    }
+    return newMap;
+  }
+
   static Item fromSqlMap(Map<String, Object?> map) {
+    map = _unquoteMap(map);
     final keys = map.keys.toSet();
     final params = <String, Object>{};
-    if (!keys.contains("name")) {
+    if (!keys.contains('name')) {
       throw ArgumentError("Missing required key name in map");
     }
 
     var id = 0;
     if (keys.contains('id')) {
       id = map['id'] as int;
-      keys.remove("id");
+      keys.remove('id');
     }
 
     final name = map['name'] as String;
-    keys.remove("name");
+    keys.remove('name');
 
     Category? category;
     if (keys.contains('category_id')) {
       category = map['category_id'] as Category?;
-      keys.remove("category_id");
+      keys.remove('category_id');
     }
 
     if (keys.contains('sub_category_id')) {
@@ -1411,7 +1445,7 @@ class _$ItemHelper {
       if (subCategory != null) {
         params['subCategory'] = subCategory;
       }
-      keys.remove("sub_category_id");
+      keys.remove('sub_category_id');
     }
 
     if (keys.isNotEmpty) {
@@ -1433,8 +1467,9 @@ class _$ItemHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
@@ -1450,8 +1485,9 @@ class _$ItemHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
@@ -1480,10 +1516,10 @@ class _$ItemHelper {
       result[i] = map;
 
       // ignore: unused_local_variable
-      final id = map[column.id] as int;
+      final id = map['id'] as int;
       //print('Item($id) $dropKeys');
       for (final key in dropKeys) {
-        map.remove(key);
+        map.remove(_unquote(key));
       }
       final categoryId = map['category_id'] as int?;
       if (categoryId != null) {
@@ -1641,9 +1677,7 @@ class _$ItemHelper {
   Future<int> deleteByIds(_$AppDatabaseExecutor db, List<Item> itemList) async {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete Item because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete Item because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
@@ -1658,9 +1692,7 @@ class _$ItemHelper {
   void deleteByIdsBatch(_$AppDatabaseBatchWrapper batch, List<Item> itemList) {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete Item because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete Item because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 

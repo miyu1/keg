@@ -894,11 +894,11 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
 // **************************************************************************
 
 class _$UserHelper {
-  final String tableName = 'user';
-  final column = (id: 'id', name: 'name');
+  final String tableName = '"user"';
+  final column = (id: '"id"', name: '"name"');
   final columnTypes = {
-    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
-    'name': "TEXT NOT NULL DEFAULT ''",
+    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+    'name': 'TEXT NOT NULL DEFAULT \'\'',
   };
   final columnList = ['id', 'name'];
 
@@ -927,7 +927,7 @@ class _$UserHelper {
     }
     var params = [];
     for (final column in columnList) {
-      params.add('$column ${columnTypes[column]}');
+      params.add('"$column" ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
     //print('Creating table: $sql');
@@ -962,7 +962,7 @@ class _$UserHelper {
     }
     for (final column in columnList) {
       final sql =
-          'ALTER TABLE $tableName ADD COLUMN $column ${columnTypes[column]}';
+          'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
       print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
@@ -976,28 +976,46 @@ class _$UserHelper {
     final values = <String, Object?>{};
 
     if (item.id != 0) {
-      values["id"] = item.id;
+      values['id'] = item.id;
     }
 
-    values["name"] = item.name;
+    values['name'] = item.name;
 
     return values;
   }
 
+  static String _unquote(String s) {
+    if (s.startsWith('"') && s.endsWith('"')) {
+      return s.substring(1, s.length - 1);
+    }
+    return s;
+  }
+
+  /// unquote column names in map for fromSqlMap
+  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {
+    final newMap = <String, Object?>{};
+    for (final entry in map.entries) {
+      var key = _unquote(entry.key);
+      newMap[key] = entry.value;
+    }
+    return newMap;
+  }
+
   static User fromSqlMap(Map<String, Object?> map) {
+    map = _unquoteMap(map);
     final keys = map.keys.toSet();
-    if (!keys.contains("name")) {
+    if (!keys.contains('name')) {
       throw ArgumentError("Missing required key name in map");
     }
 
     var id = 0;
     if (keys.contains('id')) {
       id = map['id'] as int;
-      keys.remove("id");
+      keys.remove('id');
     }
 
     final name = map['name'] as String;
-    keys.remove("name");
+    keys.remove('name');
 
     if (keys.isNotEmpty) {
       throw ArgumentError('Unkown map keys. $keys');
@@ -1015,8 +1033,9 @@ class _$UserHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
@@ -1032,8 +1051,9 @@ class _$UserHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
@@ -1062,10 +1082,10 @@ class _$UserHelper {
       result[i] = map;
 
       // ignore: unused_local_variable
-      final id = map[column.id] as int;
+      final id = map['id'] as int;
       //print('User($id) $dropKeys');
       for (final key in dropKeys) {
-        map.remove(key);
+        map.remove(_unquote(key));
       }
     }
     await batch.commit();
@@ -1203,9 +1223,7 @@ class _$UserHelper {
   Future<int> deleteByIds(_$AppDatabaseExecutor db, List<User> itemList) async {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete User because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete User because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
@@ -1220,9 +1238,7 @@ class _$UserHelper {
   void deleteByIdsBatch(_$AppDatabaseBatchWrapper batch, List<User> itemList) {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete User because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete User because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
@@ -1235,24 +1251,24 @@ class _$UserHelper {
 }
 
 class _$ItemInfoHelper {
-  final String tableName = 'item_info';
+  final String tableName = '"item_info"';
   final column = (
-    id: 'id',
-    name: 'name',
-    stock: 'stock',
-    color: 'color',
-    weight: 'weight',
-    isActive: 'is_active',
-    created: 'created',
+    id: '"id"',
+    name: '"name"',
+    stock: '"stock"',
+    color: '"color"',
+    weight: '"weight"',
+    isActive: '"is_active"',
+    created: '"created"',
   );
   final columnTypes = {
-    'id': "INTEGER PRIMARY KEY AUTOINCREMENT",
-    'name': "TEXT NOT NULL DEFAULT ''",
-    'stock': "INTEGER NOT NULL DEFAULT 0",
-    'color': "TEXT NOT NULL DEFAULT '${Color.values[0].name}'",
-    'weight': "REAL NOT NULL DEFAULT 0.0",
-    'is_active': "INTEGER NOT NULL DEFAULT 0",
-    'created': "INTEGER NOT NULL DEFAULT 0",
+    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+    'name': 'TEXT NOT NULL DEFAULT \'\'',
+    'stock': 'INTEGER NOT NULL DEFAULT 0',
+    'color': 'TEXT NOT NULL DEFAULT \'${Color.values[0].name}\'',
+    'weight': 'REAL NOT NULL DEFAULT 0.0',
+    'is_active': 'INTEGER NOT NULL DEFAULT 0',
+    'created': 'INTEGER NOT NULL DEFAULT 0',
   };
   final columnList = [
     'id',
@@ -1292,7 +1308,7 @@ class _$ItemInfoHelper {
     }
     var params = [];
     for (final column in columnList) {
-      params.add('$column ${columnTypes[column]}');
+      params.add('"$column" ${columnTypes[column]}');
     }
     final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
     //print('Creating table: $sql');
@@ -1327,7 +1343,7 @@ class _$ItemInfoHelper {
     }
     for (final column in columnList) {
       final sql =
-          'ALTER TABLE $tableName ADD COLUMN $column ${columnTypes[column]}';
+          'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
       print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
@@ -1341,69 +1357,87 @@ class _$ItemInfoHelper {
     final values = <String, Object?>{};
 
     if (item.id != 0) {
-      values["id"] = item.id;
+      values['id'] = item.id;
     }
 
-    values["name"] = item.name;
+    values['name'] = item.name;
 
-    values["stock"] = item.stock;
+    values['stock'] = item.stock;
 
-    values["color"] = item.color.name;
+    values['color'] = item.color.name;
 
-    values["weight"] = item.weight;
+    values['weight'] = item.weight;
 
-    values["is_active"] = item.isActive ? 1 : 0;
+    values['is_active'] = item.isActive ? 1 : 0;
 
-    values["created"] = item.created.toUtc().microsecondsSinceEpoch;
+    values['created'] = item.created.toUtc().microsecondsSinceEpoch;
 
     return values;
   }
 
+  static String _unquote(String s) {
+    if (s.startsWith('"') && s.endsWith('"')) {
+      return s.substring(1, s.length - 1);
+    }
+    return s;
+  }
+
+  /// unquote column names in map for fromSqlMap
+  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {
+    final newMap = <String, Object?>{};
+    for (final entry in map.entries) {
+      var key = _unquote(entry.key);
+      newMap[key] = entry.value;
+    }
+    return newMap;
+  }
+
   static ItemInfo fromSqlMap(Map<String, Object?> map) {
+    map = _unquoteMap(map);
     final keys = map.keys.toSet();
     final params = <String, Object>{};
-    if (!keys.contains("name")) {
+    if (!keys.contains('name')) {
       throw ArgumentError("Missing required key name in map");
     }
-    if (!keys.contains("color")) {
+    if (!keys.contains('color')) {
       throw ArgumentError("Missing required key color in map");
     }
-    if (!keys.contains("weight")) {
+    if (!keys.contains('weight')) {
       throw ArgumentError("Missing required key weight in map");
     }
 
     var id = 0;
     if (keys.contains('id')) {
       id = map['id'] as int;
-      keys.remove("id");
+      keys.remove('id');
     }
 
     final name = map['name'] as String;
-    keys.remove("name");
+    keys.remove('name');
 
     var stock = 0;
     if (keys.contains('stock')) {
       stock = map['stock'] as int;
-      keys.remove("stock");
+      keys.remove('stock');
     }
 
     final color = Color.values.byName(map['color'] as String);
-    keys.remove("color");
+    keys.remove('color');
 
     final weight = map['weight'] as double;
-    keys.remove("weight");
+    keys.remove('weight');
 
     var isActive = true;
     if (keys.contains('is_active')) {
       isActive = (map['is_active'] as int) == 0 ? false : true;
-      keys.remove("is_active");
+      keys.remove('is_active');
     }
 
     if (keys.contains('created')) {
       params['created'] = DateTime.fromMicrosecondsSinceEpoch(
         map['created'] as int,
       ).toLocal();
-      keys.remove("created");
+      keys.remove('created');
     }
 
     if (keys.isNotEmpty) {
@@ -1432,8 +1466,9 @@ class _$ItemInfoHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
@@ -1449,8 +1484,9 @@ class _$ItemInfoHelper {
     if (originalId == 0) {
       command = 'INSERT INTO';
     }
+    final keys = map.keys.map((e) => '"$e"').toList();
     final sql =
-        '$command $tableName (${map.keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
+        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
@@ -1479,10 +1515,10 @@ class _$ItemInfoHelper {
       result[i] = map;
 
       // ignore: unused_local_variable
-      final id = map[column.id] as int;
+      final id = map['id'] as int;
       //print('ItemInfo($id) $dropKeys');
       for (final key in dropKeys) {
-        map.remove(key);
+        map.remove(_unquote(key));
       }
     }
     await batch.commit();
@@ -1623,9 +1659,7 @@ class _$ItemInfoHelper {
   ) async {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete ItemInfo because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete ItemInfo because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
@@ -1643,9 +1677,7 @@ class _$ItemInfoHelper {
   ) {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot delete ItemInfo because it has unregistered items.',
-      );
+      throw ArgumentError('Cannot delete ItemInfo because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 
