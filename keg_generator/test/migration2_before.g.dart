@@ -807,7 +807,7 @@ class _$ItemInfoHelper {
     for (final column in columnList) {
       final sql =
           'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
-      print('Altering table: $sql');
+      //print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
       } else if (batch != null) {

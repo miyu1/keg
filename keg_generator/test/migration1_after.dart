@@ -14,18 +14,17 @@ class User {
   Map<String, Object?> toSqlMap() => _$UserHelper.toSqlMap(this);
   factory User.fromSqlMap(Map<String, Object?> map) =>
       _$UserHelper.fromSqlMap(map);
-
 }
 
-enum Color {
-  red, green, blue;
-}
+enum Color { red, green, blue }
 
 @Table()
 class ItemInfo {
   int id;
+  @unique
   String name;
   int stock;
+  @index
   Color color;
   double weight;
   bool isActive;
@@ -106,7 +105,8 @@ void main() async {
 
     final result3 = await appdb.queryItemInfo(
       where: '${appdb.itemInfoHelper.column.name} = ?',
-      whereArgs: [item.name]);
+      whereArgs: [item.name],
+    );
     expect(result3.length, 1);
     expect(result3[0].id, item.id);
     expect(result3[0].name, item.name);
@@ -125,4 +125,21 @@ void main() async {
     expect(result4[0].id, user.id);
   });
 
+  test('check index is created after migration1', () async {
+    final result = await appdb.rawQuery(
+        "SELECT * FROM sqlite_master WHERE type='index' AND name='item_info_name_idx'");
+    expect(result.length, 1);
+    expect(result[0]['name'], 'item_info_name_idx');
+    expect(result[0]['tbl_name'], 'item_info');
+    expect(result[0]['sql'], contains('UNIQUE'));
+    expect(result[0]['sql'], contains('("name" ASC)'));
+
+    final result2 = await appdb.rawQuery(
+        "SELECT * FROM sqlite_master WHERE type='index' AND name='item_info_color_idx'");
+    expect(result2.length, 1);
+    expect(result2[0]['name'], 'item_info_color_idx');
+    expect(result2[0]['tbl_name'], 'item_info');
+    expect(result2[0]['sql'], isNot(contains('UNIQUE')));
+    expect(result2[0]['sql'], contains('("color" ASC)'));
+  });
 }

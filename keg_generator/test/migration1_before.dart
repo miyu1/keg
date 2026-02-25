@@ -8,6 +8,8 @@ part 'migration1_before.g.dart';
 @Table()
 class ItemInfo {
   int id;
+
+  @unique
   String name;
 
   ItemInfo(

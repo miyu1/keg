@@ -185,6 +185,25 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
   }
 
   List<String> _generateTableCreators(String className) {
+    // indexes
+    final indexLines = <String>[];
+    final indexedFields = _fieldMap.values.where((field) => field.isIndexed);
+    for (final field in indexedFields) {
+      final indexName = '\${_unquote(tableName)}_${field.columnName}_idx';
+      final index = field.annotationObject as Index;
+      final uniqueStr = index.unique ? 'UNIQUE' : '';
+      final descStr = index.descendant ? 'DESC' : 'ASC';
+      indexLines.addAll([
+        '    final ${field.name}IndexSql = \'CREATE $uniqueStr INDEX IF NOT EXISTS "$indexName" ON \$tableName ("${field.columnName}" $descStr)\';',
+        '    if (db != null) {',
+        '      await db.execute(${field.name}IndexSql);',
+        '    } else if (batch != null) {',
+        '      batch.execute(${field.name}IndexSql);',
+        '    }',
+      ]);
+    }
+
+
     final lines = [
       '  /// on create database table',
       '  Future<void> onCreate(int version, {DatabaseExecutor? db, Batch? batch}) async {',
@@ -209,6 +228,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '    } else if (batch != null) {',
       '      batch.execute(sql);',
       '    }',
+      '',
+      ...indexLines,
       '  }',
       '',
       '  /// on upgrade database table',
@@ -231,15 +252,17 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '    }',
       '    for (final column in columnList) {',
       '      final sql = \'ALTER TABLE \$tableName ADD COLUMN "\$column" \${columnTypes[column]}\';',
-      '      print(\'Altering table: \$sql\');',
+      '      //print(\'Altering table: \$sql\');',
       '      if (db != null) {',
       '        await db.execute(sql);',
       '      } else if (batch != null) {',
       '        batch.execute(sql);',
       '      }',
       '    }',
-      '  }'
-          '',
+      '',
+      ...indexLines,
+      '  }',
+      '',
     ];
 
     return lines;
@@ -1033,7 +1056,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         continue;
       }
 
-      if (_annotatedWith(field, 'ignore')) {
+      if (_annotatedWith(field, 'Ignore')) {
         continue;
       }
 
@@ -1209,6 +1232,18 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           }
         }
       }
+
+      if (_annotatedWith(field, 'Index')) {
+        if (type == _DataType.dtBackLink ||
+            type == _DataType.dtBackLinkMany ||
+            type == _DataType.dtManyReference) {
+          final msg =
+              '${element.name}: field ${field.name} cannot be indexed.';
+          throw InvalidGenerationSourceError(msg);
+        }
+        fieldInfo.isIndexed = true;
+        fieldInfo.annotationObject = annotationObject;
+      }
       fieldInfo.type = type;
 
       fieldMap[name] = fieldInfo;
@@ -1380,17 +1415,30 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       if (library == null) {
         continue;
       }
-      if (annoElem.displayName.toLowerCase() == name.toLowerCase() &&
+      final dartObject = annotation.computeConstantValue();
+      if (dartObject == null) {
+        continue;
+      }
+      if (dartObject.type == null) {
+        continue;
+      }
+
+      final typeName = dartObject.type!.getDisplayString();
+
+//      if (annoElem.displayName.toLowerCase() == name.toLowerCase() &&
+//          library.identifier.startsWith('package:keg_annotation')) {
+      if (typeName == name &&
           library.identifier.startsWith('package:keg_annotation')) {
         found = true;
         annotationObject = null;
-        if (annoElem.displayName == 'BackLink' ||
-            annoElem.displayName == 'ManyToMany') {
-          final dartObject = annotation.computeConstantValue();
-          final order = dartObject?.getField('order')?.toStringValue();
-          final desc = dartObject?.getField('descendant')?.toBoolValue();
-          if (annoElem.displayName == 'BackLink') {
-            final to = dartObject?.getField('to')?.toStringValue();
+//        if (annoElem.displayName == 'BackLink' ||
+//            annoElem.displayName == 'ManyToMany') {
+        if (typeName == 'BackLink' || typeName == 'ManyToMany') {
+          //final dartObject = annotation.computeConstantValue();
+          final order = dartObject.getField('order')?.toStringValue();
+          final desc = dartObject.getField('descendant')?.toBoolValue();
+          if (typeName == 'BackLink') {
+            final to = dartObject.getField('to')?.toStringValue();
             if (to != null && order != null && desc != null) {
               annotationObject = BackLink(
                 to: to,
@@ -1398,11 +1446,11 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
                 descendant: desc,
               );
             }
-          } else if (annoElem.displayName == 'ManyToMany') {
-            final self = dartObject?.getField('self')?.toStringValue();
-            final target = dartObject?.getField('target')?.toStringValue();
-            final middle = dartObject?.getField('middle')?.toTypeValue();
-            final field = dartObject?.getField('field')?.toStringValue();
+          } else if (typeName == 'ManyToMany') {
+            final self = dartObject.getField('self')?.toStringValue();
+            final target = dartObject.getField('target')?.toStringValue();
+            final middle = dartObject.getField('middle')?.toTypeValue();
+            final field = dartObject.getField('field')?.toStringValue();
             if (self != null &&
                 target != null &&
                 middle != null &&
@@ -1418,6 +1466,12 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
                 descendant: desc,
               );
             }
+          }
+        } else if (typeName == 'Index') {
+          final unique = dartObject.getField('unique')?.toBoolValue();
+          final desc = dartObject.getField('descendant')?.toBoolValue();
+          if (unique != null && desc != null) {
+            annotationObject = Index(unique: unique, descendant: desc);
           }
         }
         break;
@@ -1478,8 +1532,9 @@ class _FieldInfo {
   _DataType type = .dtUnknown;
   String className = ''; // for enum and ref
   String defaultValue = '';
-  //bool isRequired = false;
   ConstructType constructType = .notIncluded;
+  bool isIndexed = false;
+
   Object? annotationObject;
   Object? annotationObject2;
 }

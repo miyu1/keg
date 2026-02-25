@@ -7,3 +7,5 @@ export 'src/annotations.dart';
 
 const table = Table();
 const ignore = Ignore();
+const unique = Index(unique: true);
+const index = Index(unique: false);

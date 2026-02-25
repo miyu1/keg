@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'transaction_test.dart';
+part of 'index_test.dart';
 
 // **************************************************************************
 // DatabaseGenerator
@@ -736,18 +736,25 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
 
 class _$UserHelper {
   final String tableName = '"user"';
-  final column = (id: '"id"', name: '"name"');
+  final column = (
+    id: '"id"',
+    name: '"name"',
+    updated: '"updated"',
+    contact: '"contact"',
+  );
   final columnTypes = {
     'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
     'name': 'TEXT NOT NULL DEFAULT \'\'',
+    'updated': 'INTEGER NOT NULL DEFAULT 0',
+    'contact': 'TEXT NOT NULL DEFAULT \'\'',
   };
-  final columnList = ['id', 'name'];
+  final columnList = ['id', 'name', 'updated', 'contact'];
 
   _$AppDatabase appdb;
 
   _$UserHelper(this.appdb);
 
-  static final v1ColumnList = ['id', 'name'];
+  static final v1ColumnList = ['id', 'name', 'updated', 'contact'];
   final columnListByVersion = {1: v1ColumnList};
 
   /// on create database table
@@ -776,6 +783,28 @@ class _$UserHelper {
       await db.execute(sql);
     } else if (batch != null) {
       batch.execute(sql);
+    }
+
+    final nameIndexSql =
+        'CREATE UNIQUE INDEX IF NOT EXISTS "${_unquote(tableName)}_name_idx" ON $tableName ("name" ASC)';
+    if (db != null) {
+      await db.execute(nameIndexSql);
+    } else if (batch != null) {
+      batch.execute(nameIndexSql);
+    }
+    final updatedIndexSql =
+        'CREATE  INDEX IF NOT EXISTS "${_unquote(tableName)}_updated_idx" ON $tableName ("updated" DESC)';
+    if (db != null) {
+      await db.execute(updatedIndexSql);
+    } else if (batch != null) {
+      batch.execute(updatedIndexSql);
+    }
+    final contactIndexSql =
+        'CREATE  INDEX IF NOT EXISTS "${_unquote(tableName)}_contact_idx" ON $tableName ("contact" ASC)';
+    if (db != null) {
+      await db.execute(contactIndexSql);
+    } else if (batch != null) {
+      batch.execute(contactIndexSql);
     }
   }
 
@@ -811,6 +840,28 @@ class _$UserHelper {
         batch.execute(sql);
       }
     }
+
+    final nameIndexSql =
+        'CREATE UNIQUE INDEX IF NOT EXISTS "${_unquote(tableName)}_name_idx" ON $tableName ("name" ASC)';
+    if (db != null) {
+      await db.execute(nameIndexSql);
+    } else if (batch != null) {
+      batch.execute(nameIndexSql);
+    }
+    final updatedIndexSql =
+        'CREATE  INDEX IF NOT EXISTS "${_unquote(tableName)}_updated_idx" ON $tableName ("updated" DESC)';
+    if (db != null) {
+      await db.execute(updatedIndexSql);
+    } else if (batch != null) {
+      batch.execute(updatedIndexSql);
+    }
+    final contactIndexSql =
+        'CREATE  INDEX IF NOT EXISTS "${_unquote(tableName)}_contact_idx" ON $tableName ("contact" ASC)';
+    if (db != null) {
+      await db.execute(contactIndexSql);
+    } else if (batch != null) {
+      batch.execute(contactIndexSql);
+    }
   }
 
   static Map<String, Object?> toSqlMap(User item) {
@@ -821,6 +872,10 @@ class _$UserHelper {
     }
 
     values['name'] = item.name;
+
+    values['updated'] = item.updated.toUtc().microsecondsSinceEpoch;
+
+    values['contact'] = item.contact;
 
     return values;
   }
@@ -845,6 +900,7 @@ class _$UserHelper {
   static User fromSqlMap(Map<String, Object?> map) {
     map = _unquoteMap(map);
     final keys = map.keys.toSet();
+    final params = <String, Object>{};
     if (!keys.contains('name')) {
       throw ArgumentError("Missing required key name in map");
     }
@@ -858,12 +914,28 @@ class _$UserHelper {
     final name = map['name'] as String;
     keys.remove('name');
 
+    if (keys.contains('updated')) {
+      params['updated'] = DateTime.fromMicrosecondsSinceEpoch(
+        map['updated'] as int,
+      ).toLocal();
+      keys.remove('updated');
+    }
+
+    var contact = '';
+    if (keys.contains('contact')) {
+      contact = map['contact'] as String;
+      keys.remove('contact');
+    }
+
     if (keys.isNotEmpty) {
       throw ArgumentError('Unkown map keys. $keys');
     }
 
-    final $item = User(name, id);
+    final $item = User(name, id: id, contact: contact);
 
+    if (params['updated'] != null) {
+      $item.updated = params['updated'] as DateTime;
+    }
     return $item;
   }
 

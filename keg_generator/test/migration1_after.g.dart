@@ -963,7 +963,7 @@ class _$UserHelper {
     for (final column in columnList) {
       final sql =
           'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
-      print('Altering table: $sql');
+      //print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
       } else if (batch != null) {
@@ -1323,6 +1323,21 @@ class _$ItemInfoHelper {
     } else if (batch != null) {
       batch.execute(sql);
     }
+
+    final nameIndexSql =
+        'CREATE UNIQUE INDEX IF NOT EXISTS "${_unquote(tableName)}_name_idx" ON $tableName ("name" ASC)';
+    if (db != null) {
+      await db.execute(nameIndexSql);
+    } else if (batch != null) {
+      batch.execute(nameIndexSql);
+    }
+    final colorIndexSql =
+        'CREATE  INDEX IF NOT EXISTS "${_unquote(tableName)}_color_idx" ON $tableName ("color" ASC)';
+    if (db != null) {
+      await db.execute(colorIndexSql);
+    } else if (batch != null) {
+      batch.execute(colorIndexSql);
+    }
   }
 
   /// on upgrade database table
@@ -1350,12 +1365,27 @@ class _$ItemInfoHelper {
     for (final column in columnList) {
       final sql =
           'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
-      print('Altering table: $sql');
+      //print('Altering table: $sql');
       if (db != null) {
         await db.execute(sql);
       } else if (batch != null) {
         batch.execute(sql);
       }
+    }
+
+    final nameIndexSql =
+        'CREATE UNIQUE INDEX IF NOT EXISTS "${_unquote(tableName)}_name_idx" ON $tableName ("name" ASC)';
+    if (db != null) {
+      await db.execute(nameIndexSql);
+    } else if (batch != null) {
+      batch.execute(nameIndexSql);
+    }
+    final colorIndexSql =
+        'CREATE  INDEX IF NOT EXISTS "${_unquote(tableName)}_color_idx" ON $tableName ("color" ASC)';
+    if (db != null) {
+      await db.execute(colorIndexSql);
+    } else if (batch != null) {
+      batch.execute(colorIndexSql);
     }
   }
 

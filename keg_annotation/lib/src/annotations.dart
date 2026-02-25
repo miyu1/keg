@@ -52,6 +52,53 @@ class BackLink{
   const BackLink({required this.to, this.order = "id", this.descendant = false});
 }
 
+/// Annotation for many to many relation field of table class.
+/// Example:
+/// @table
+/// class Order {
+///   int id;
+//    String user;
+///
+///   @ManyToMany(middle: OrderToItem, self: 'order', target: 'item',
+///     order: 'name', descendant: true)
+///   List&lt;Item&gt; itemList = [];
+///
+///   Order(this.user, {this.id = 0});
+///
+///   Map&lt;String, Object?&gt; toSqlMap() => _$OrderHelper.toSqlMap(this);
+///   factory Order.fromSqlMap(Map&lt;String, Object?&gt; map) =>
+///       _$OrderHelper.fromSqlMap(map);
+/// }
+///
+/// @table
+/// class Item {
+///   int id;
+///   String name;
+///
+///   @BackLink(to: 'itemList')
+///   List&lt;Order&gt; orderList = [];
+///
+///   Item(this.name, {this.id = 0});
+/// 
+///   Map&lt;String, Object?&gt; toSqlMap() => _$ItemHelper.toSqlMap(this);
+///   factory Item.fromSqlMap(Map&lt;String, Object?&gt; map) =>
+///       _$ItemHelper.fromSqlMap(map);
+/// }
+///
+// @table
+/// class OrderToItem {
+///   int id;
+///   Order? order;
+///   Item? item;
+///   String field;
+///
+//   OrderToItem({required this.order, required this.item, required this.field, this.id = 0});
+///
+///   Map&lt;String, Object?&gt; toSqlMap() => _$OrderToItemHelper.toSqlMap(this);
+///   factory OrderToItem.fromSqlMap(Map&lt;String, Object?&gt; map) =>
+///       _$OrderToItemHelper.fromSqlMap(map);
+/// }
+///
 @Target({TargetKind.field})
 class ManyToMany {
   /// class of middle table
@@ -76,3 +123,15 @@ class ManyToMany {
     this.order = "id",
     this.descendant = false,});
 }
+
+/// Annotation for index field of table class.
+@Target({TargetKind.field})
+class Index {
+  /// Whether the index is unique or not. Default is false.
+  final bool unique;
+  /// If true, descendant order, else ascendant
+  final bool descendant;
+
+  const Index({required this.unique, this.descendant = false});
+}
+
