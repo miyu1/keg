@@ -1546,7 +1546,7 @@ class _$OrderHelper {
             throw StateError('returned object $object is not expected type.');
           }
           final middleList = object;
-          final targetList = <Item>[];
+          var targetMapList = <Map<String, Object?>>[];
           for (final middleMap in middleList) {
             final targetMap = <String, Object?>{};
             for (final key in middleMap.keys) {
@@ -1557,9 +1557,16 @@ class _$OrderHelper {
                 targetMap[newKey] = middleMap[key];
               }
             }
-            final target = Item.fromSqlMap(targetMap);
-            targetList.add(target);
+            targetMapList.add(targetMap);
           }
+          targetMapList = await appdb.itemHelper.convertReferences(
+            targetMapList,
+            db,
+            ['order_list'],
+          );
+          final targetList = targetMapList
+              .map((targetMap) => Item.fromSqlMap(targetMap))
+              .toList();
           map['item_list'] = targetList;
           return targetList;
         });
@@ -1571,7 +1578,7 @@ class _$OrderHelper {
             throw StateError('returned object $object is not expected type.');
           }
           final middleList = object;
-          final targetList = <Item>[];
+          var targetMapList = <Map<String, Object?>>[];
           for (final middleMap in middleList) {
             final targetMap = <String, Object?>{};
             for (final key in middleMap.keys) {
@@ -1582,9 +1589,16 @@ class _$OrderHelper {
                 targetMap[newKey] = middleMap[key];
               }
             }
-            final target = Item.fromSqlMap(targetMap);
-            targetList.add(target);
+            targetMapList.add(targetMap);
           }
+          targetMapList = await appdb.itemHelper.convertReferences(
+            targetMapList,
+            db,
+            ['order_list'],
+          );
+          final targetList = targetMapList
+              .map((targetMap) => Item.fromSqlMap(targetMap))
+              .toList();
           map['item_list2'] = targetList;
           return targetList;
         });
@@ -2033,7 +2047,7 @@ class _$ItemHelper {
             throw StateError('returned object $object is not expected type.');
           }
           final middleList = object;
-          final targetList = <Order>[];
+          var targetMapList = <Map<String, Object?>>[];
           for (final middleMap in middleList) {
             final targetMap = <String, Object?>{};
             for (final key in middleMap.keys) {
@@ -2044,9 +2058,16 @@ class _$ItemHelper {
                 targetMap[newKey] = middleMap[key];
               }
             }
-            final target = Order.fromSqlMap(targetMap);
-            targetList.add(target);
+            targetMapList.add(targetMap);
           }
+          targetMapList = await appdb.orderHelper.convertReferences(
+            targetMapList,
+            db,
+            ['item_list'],
+          );
+          final targetList = targetMapList
+              .map((targetMap) => Order.fromSqlMap(targetMap))
+              .toList();
           map['order_list'] = targetList;
           return targetList;
         });
@@ -2352,14 +2373,8 @@ class _$OrderToItemHelper {
   static OrderToItem fromSqlMap(Map<String, Object?> map) {
     map = _unquoteMap(map);
     final keys = map.keys.toSet();
-    if (!keys.contains('order_id')) {
-      throw ArgumentError("Missing required key order_id in map");
-    }
     if (!keys.contains('field')) {
       throw ArgumentError("Missing required key field in map");
-    }
-    if (!keys.contains('item_id')) {
-      throw ArgumentError("Missing required key item_id in map");
     }
 
     var id = 0;
@@ -2368,14 +2383,20 @@ class _$OrderToItemHelper {
       keys.remove('id');
     }
 
-    final order = map['order_id'] as Order?;
-    keys.remove('order_id');
+    Order? order;
+    if (keys.contains('order_id')) {
+      order = map['order_id'] as Order?;
+      keys.remove('order_id');
+    }
 
     final field = map['field'] as String;
     keys.remove('field');
 
-    final item = map['item_id'] as Item?;
-    keys.remove('item_id');
+    Item? item;
+    if (keys.contains('item_id')) {
+      item = map['item_id'] as Item?;
+      keys.remove('item_id');
+    }
 
     if (keys.isNotEmpty) {
       throw ArgumentError('Unkown map keys. $keys');

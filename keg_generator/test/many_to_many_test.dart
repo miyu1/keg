@@ -49,7 +49,7 @@ class OrderToItem {
   String field;
   Item? item;
 
-  OrderToItem({required this.order, required this.item, required this.field, this.id = 0});
+  OrderToItem({required this.field, this.order, this.item, this.id = 0});
 
   Map<String, Object?> toSqlMap() => _$OrderToItemHelper.toSqlMap(this);
   factory OrderToItem.fromSqlMap(Map<String, Object?> map) =>

@@ -25,6 +25,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     if (element is! ClassElement) {
       throw InvalidGenerationSourceError('${element.name} is not a class');
     }
+    //print('Generating table for class ${element.name}');
 
     // initialize values
     _fieldMap.clear();
@@ -203,7 +204,6 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       ]);
     }
 
-
     final lines = [
       '  /// on create database table',
       '  Future<void> onCreate(int version, {DatabaseExecutor? db, Batch? batch}) async {',
@@ -330,7 +330,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '  }',
       '  return s;',
       '}',
-      '', 
+      '',
       '  /// unquote column names in map for fromSqlMap',
       '  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {',
       '    final newMap = <String, Object?>{};',
@@ -346,7 +346,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     lines.addAll([
       'static $className fromSqlMap(Map<String, Object?> map) {',
       '  map = _unquoteMap(map);',
-      '  final keys = map.keys.toSet();'
+      '  final keys = map.keys.toSet();',
     ]);
     if (_fieldMap.values.any((field) => field.constructType == .notIncluded)) {
       lines.add(' final params = <String, Object>{};');
@@ -782,9 +782,30 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           ');',
           '',
         ]);
-      } else if (field.type == .dtManyReference || field.type == .dtBackLinkMany) {
+      } else if (field.type == .dtManyReference ||
+          field.type == .dtBackLinkMany) {
         var varName = toLowerCamelCase(field.className);
         varName = '${varName}Helper';
+        var dropKeys = <String>[];
+        if (field.type == .dtBackLinkMany) {
+          final backLink = field.annotationObject as BackLink;
+          dropKeys.add("'${toSnakeCase(backLink.to)}'");
+        } else if (field.type == .dtManyReference) {
+          dropKeys.addAll(field.dropList.map((e) => "'$e'",));
+        }
+        for (final otherField in _fieldMap.values) {
+          if (otherField.name == field.name) {
+            continue;
+          }
+          if (otherField.className == field.className) {
+            if (otherField.type == .dtBackLinkMany) {
+              final backLink2 = otherField.annotationObject as BackLink;
+              dropKeys.add("'${toSnakeCase(backLink2.to)}'");
+            } else if (otherField.type == .dtManyReference) {
+              dropKeys.addAll(otherField.dropList.map((e) => "'$e'",));
+            }
+          }
+        }
         lines.addAll([
           "if (!dropKeys.contains('${field.columnName}')) {",
           'batch.rawQuery(',
@@ -795,18 +816,20 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           "    throw StateError('returned object \$object is not expected type.');",
           '  }',
           '  final middleList = object;',
-          '  final targetList = <${field.className}>[];',
+
+          '  var targetMapList = <Map<String, Object?>>[];',
           '  for (final middleMap in middleList) {',
           '    final targetMap = <String, Object?>{};',
           '    for (final key in middleMap.keys) {',
           "      if (key.startsWith('\${_unquote(appdb.$varName.tableName)}-')) {",
-          "        final newKey = key.substring(_unquote(appdb.$varName.tableName).length + 1);",  
+          "        final newKey = key.substring(_unquote(appdb.$varName.tableName).length + 1);",
           '        targetMap[newKey] = middleMap[key];',
           '      }',
           '    }',
-          '    final target = ${field.className}.fromSqlMap(targetMap);',
-          '    targetList.add(target);',
+          '      targetMapList.add(targetMap);',
           '  }',
+          "  targetMapList = await appdb.$varName.convertReferences(targetMapList, db, [${dropKeys.join(', ')}]);",
+          '  final targetList = targetMapList.map((targetMap) => ${field.className}.fromSqlMap(targetMap)).toList();',
           "  map['${field.columnName}'] = targetList;",
           '  return targetList;',
           '},',
@@ -833,7 +856,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       ' final result = mapList.map((map) => $className.fromSqlMap(map)).toList();',
     ]);
     final backLinkFields = _fieldMap.values.where(
-      (field) => field.type == .dtBackLink
+      (field) => field.type == .dtBackLink,
     );
     if (backLinkFields.isNotEmpty) {
       lines.add('for (final object in result){');
@@ -1043,10 +1066,13 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
   Future<Map<String, _FieldInfo>> _analyzeFields(
     ClassElement element,
-    BuildStep buildStep,
-  ) async {
+    BuildStep buildStep, {
+    bool avoidRecursive = false,
+  }) async {
     final fieldMap = <String, _FieldInfo>{};
     //_fieldMap.clear();
+
+    //print('analyzing fields of ${element.name}');
 
     for (final field in element.fields) {
       if (field.isPrivate) {
@@ -1092,7 +1118,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           typeName = typeName.substring(0, typeName.length - 1);
         }
         if (!tableNameList.contains(typeName)) {
-          final msg = '${element.name} is not included in $appDbName';
+          final msg = '$typeName is not included in $appDbName';
           throw InvalidGenerationSourceError(msg);
         }
         type = _DataType.dtReference;
@@ -1200,6 +1226,31 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
                 'field ${manyToMany.field} must be String in class ${manyToMany.middle}';
             throw InvalidGenerationSourceError(msg);
           }
+          final linkElement = library.getClass(fieldInfo.className);
+          if (linkElement == null) {
+            final msg =
+                '${element.name}: annotation error. '
+                'class ${fieldInfo.className} not found';
+            throw InvalidGenerationSourceError(msg);
+          }
+          if (avoidRecursive == false) {
+            final linkFieldMap = await _analyzeFields(
+              linkElement,
+              buildStep,
+              avoidRecursive: true,
+            );
+            for (final linkField in linkFieldMap.values) {
+              // if analyzeFields is called with avoidRecursive=true,
+              // cannot recognize whether dtBackLinkMany or dtBackLink
+              if (linkField.type == _DataType.dtBackLinkMany ||
+                  linkField.type == _DataType.dtBackLink) {
+                final backLink = linkField.annotationObject as BackLink;
+                if (backLink.to == fieldInfo.name) {
+                  fieldInfo.dropList.add(linkField.columnName);
+                }
+              }
+            }
+          }
         } else {
           // back link validation
           final backLink = fieldInfo.annotationObject as BackLink;
@@ -1212,23 +1263,29 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
             throw InvalidGenerationSourceError(msg);
           }
 
-          final toFieldMap = await _analyzeFields(toElement, buildStep);
-          final toField = toFieldMap[backLink.to];
-          if (toField == null) {
-            final msg =
-                '${element.name}: ${fieldInfo.name} annotation error. '
-                'field ${backLink.to} not found in class ${backLink.to}';
-            throw InvalidGenerationSourceError(msg);
-          }
-          if (toField.className != element.name) {
-            final msg =
-                '${element.name}: ${fieldInfo.name} annotation error. '
-                'field ${backLink.to} type mismatch in class ${backLink.to}';
-            throw InvalidGenerationSourceError(msg);
-          }
-          if (toField.type == _DataType.dtManyReference) {
-            type = _DataType.dtBackLinkMany;
-            fieldInfo.annotationObject2 = toField.annotationObject;
+          if (avoidRecursive == false) {
+            final toFieldMap = await _analyzeFields(
+              toElement,
+              buildStep,
+              avoidRecursive: true,
+            );
+            final toField = toFieldMap[backLink.to];
+            if (toField == null) {
+              final msg =
+                  '${element.name}: ${fieldInfo.name} annotation error. '
+                  'field ${backLink.to} not found in class ${backLink.to}';
+              throw InvalidGenerationSourceError(msg);
+            }
+            if (toField.className != element.name) {
+              final msg =
+                  '${element.name}: ${fieldInfo.name} annotation error. '
+                  'field ${backLink.to} type mismatch in class ${backLink.to}';
+              throw InvalidGenerationSourceError(msg);
+            }
+            if (toField.type == _DataType.dtManyReference) {
+              type = _DataType.dtBackLinkMany;
+              fieldInfo.annotationObject2 = toField.annotationObject;
+            }
           }
         }
       }
@@ -1237,8 +1294,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         if (type == _DataType.dtBackLink ||
             type == _DataType.dtBackLinkMany ||
             type == _DataType.dtManyReference) {
-          final msg =
-              '${element.name}: field ${field.name} cannot be indexed.';
+          final msg = '${element.name}: field ${field.name} cannot be indexed.';
           throw InvalidGenerationSourceError(msg);
         }
         fieldInfo.isIndexed = true;
@@ -1321,6 +1377,16 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       }
       final defaultValue = param.defaultValueCode!;
       _fieldMap[param.displayName]!.defaultValue = defaultValue;
+    }
+
+    for (final fieldInfo in _fieldMap.values) {
+      if (fieldInfo.constructType == .required &&
+          fieldInfo.type == _DataType.dtReference) {
+        final msg =
+            '${element.displayName}: ${fieldInfo.name}'
+            ' must be optional parameter of constructor.';
+        throw InvalidGenerationSourceError(msg);
+      }
     }
   }
 
@@ -1425,14 +1491,14 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
       final typeName = dartObject.type!.getDisplayString();
 
-//      if (annoElem.displayName.toLowerCase() == name.toLowerCase() &&
-//          library.identifier.startsWith('package:keg_annotation')) {
+      //      if (annoElem.displayName.toLowerCase() == name.toLowerCase() &&
+      //          library.identifier.startsWith('package:keg_annotation')) {
       if (typeName == name &&
           library.identifier.startsWith('package:keg_annotation')) {
         found = true;
         annotationObject = null;
-//        if (annoElem.displayName == 'BackLink' ||
-//            annoElem.displayName == 'ManyToMany') {
+        //        if (annoElem.displayName == 'BackLink' ||
+        //            annoElem.displayName == 'ManyToMany') {
         if (typeName == 'BackLink' || typeName == 'ManyToMany') {
           //final dartObject = annotation.computeConstantValue();
           final order = dartObject.getField('order')?.toStringValue();
@@ -1534,6 +1600,9 @@ class _FieldInfo {
   String defaultValue = '';
   ConstructType constructType = .notIncluded;
   bool isIndexed = false;
+
+  List<String> dropList =
+      []; // to avoid circular reference in many to many relation
 
   Object? annotationObject;
   Object? annotationObject2;

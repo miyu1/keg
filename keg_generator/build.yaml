@@ -10,6 +10,7 @@ targets:
         generate_for:
           include:
             - test/**.dart
+            - example/**.dart
 
 # builders section is for the package itself
 builders:
