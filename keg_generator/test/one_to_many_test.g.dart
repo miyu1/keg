@@ -22,10 +22,13 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   });
 
-  Future<Category?> getCategory(int id, [List<String> dropKeys = const []]);
+  Future<Category?> getCategory(
+    int id, [
+    List<({String table, String column})> dropKeys = const [],
+  ]);
 
   Future<int> deleteCategory({String? where, List<Object?>? whereArgs});
 
@@ -43,10 +46,13 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   });
 
-  Future<Item?> getItem(int id, [List<String> dropKeys = const []]);
+  Future<Item?> getItem(
+    int id, [
+    List<({String table, String column})> dropKeys = const [],
+  ]);
 
   Future<int> deleteItem({String? where, List<Object?>? whereArgs});
 
@@ -80,7 +86,7 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   }) => appdb.categoryHelper.query(
     this,
     where: where,
@@ -92,8 +98,10 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   );
 
   @override
-  Future<Category?> getCategory(int id, [List<String> dropKeys = const []]) =>
-      appdb.categoryHelper.get(id, this, dropKeys);
+  Future<Category?> getCategory(
+    int id, [
+    List<({String table, String column})> dropKeys = const [],
+  ]) => appdb.categoryHelper.get(id, this, dropKeys);
 
   @override
   Future<int> deleteCategory({String? where, List<Object?>? whereArgs}) =>
@@ -113,7 +121,7 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   }) => appdb.itemHelper.query(
     this,
     where: where,
@@ -125,8 +133,10 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   );
 
   @override
-  Future<Item?> getItem(int id, [List<String> dropKeys = const []]) =>
-      appdb.itemHelper.get(id, this, dropKeys);
+  Future<Item?> getItem(
+    int id, [
+    List<({String table, String column})> dropKeys = const [],
+  ]) => appdb.itemHelper.get(id, this, dropKeys);
 
   @override
   Future<int> deleteItem({String? where, List<Object?>? whereArgs}) =>
@@ -347,7 +357,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     appdb.categoryHelper.queryBatch(
@@ -366,7 +376,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
 
   void getCategory(
     int id, {
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     appdb.categoryHelper.getBatch(id, this, dropKeys);
@@ -412,7 +422,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     appdb.itemHelper.queryBatch(
@@ -431,7 +441,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
 
   void getItem(
     int id, {
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
     appdb.itemHelper.getBatch(id, this, dropKeys);
@@ -684,7 +694,7 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   }) => categoryHelper.query(
     this,
     where: where,
@@ -696,8 +706,10 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   );
 
   @override
-  Future<Category?> getCategory(int id, [List<String> dropKeys = const []]) =>
-      categoryHelper.get(id, this, dropKeys);
+  Future<Category?> getCategory(
+    int id, [
+    List<({String table, String column})> dropKeys = const [],
+  ]) => categoryHelper.get(id, this, dropKeys);
 
   @override
   Future<int> deleteCategory({String? where, List<Object?>? whereArgs}) =>
@@ -721,7 +733,7 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   }) => itemHelper.query(
     this,
     where: where,
@@ -733,8 +745,10 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   );
 
   @override
-  Future<Item?> getItem(int id, [List<String> dropKeys = const []]) =>
-      itemHelper.get(id, this, dropKeys);
+  Future<Item?> getItem(
+    int id, [
+    List<({String table, String column})> dropKeys = const [],
+  ]) => itemHelper.get(id, this, dropKeys);
 
   @override
   Future<int> deleteItem({String? where, List<Object?>? whereArgs}) =>
@@ -1080,7 +1094,7 @@ class _$CategoryHelper {
   Future<List<Map<String, Object?>>> convertReferences(
     List<Map<String, Object?>> mapList,
     _$AppDatabaseExecutor db,
-    List<String> dropKeys,
+    List<({String table, String column})> dropKeys,
   ) async {
     var result = mapList;
     result = result.toList(); // convert to modifiable list
@@ -1093,15 +1107,23 @@ class _$CategoryHelper {
 
       // ignore: unused_local_variable
       final id = map['id'] as int;
-      //print('Category($id) $dropKeys');
+      //print('Category($id) ${dropKeys.map((e) => '${_unquote(e.table)}.${_unquote(e.column)}').join(', ')}');
       for (final key in dropKeys) {
-        map.remove(_unquote(key));
+        if (_unquote(key.table) == 'category') {
+          map.remove(_unquote(key.column));
+        }
       }
       batch.queryItem(
         where: '${appdb.itemHelper.column.category} = ?',
         whereArgs: [id],
         orderBy: '${appdb.itemHelper.column.name} ASC',
-        dropKeys: [appdb.itemHelper.column.category],
+        dropKeys: [
+          (
+            table: appdb.itemHelper.tableName,
+            column: appdb.itemHelper.column.category,
+          ),
+          ...dropKeys,
+        ],
         onCommit: (noResult, object) async {
           if (noResult == true || object is! List<Item>) {
             throw StateError('returned object $object is not expected type.');
@@ -1134,7 +1156,7 @@ class _$CategoryHelper {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   }) async {
     var queryResult = await db.query(
       tableName,
@@ -1157,7 +1179,7 @@ class _$CategoryHelper {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   }) {
     batch.query(
       tableName,
@@ -1185,7 +1207,7 @@ class _$CategoryHelper {
   Future<Category?> get(
     int id,
     _$AppDatabaseExecutor db, [
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   ]) async {
     final result = await query(
       db,
@@ -1205,7 +1227,7 @@ class _$CategoryHelper {
   void getBatch(
     int id,
     _$AppDatabaseBatchWrapper batch, [
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   ]) {
     batch.query(
       tableName,
@@ -1504,7 +1526,7 @@ class _$ItemHelper {
   Future<List<Map<String, Object?>>> convertReferences(
     List<Map<String, Object?>> mapList,
     _$AppDatabaseExecutor db,
-    List<String> dropKeys,
+    List<({String table, String column})> dropKeys,
   ) async {
     var result = mapList;
     result = result.toList(); // convert to modifiable list
@@ -1517,14 +1539,17 @@ class _$ItemHelper {
 
       // ignore: unused_local_variable
       final id = map['id'] as int;
-      //print('Item($id) $dropKeys');
+      //print('Item($id) ${dropKeys.map((e) => '${_unquote(e.table)}.${_unquote(e.column)}').join(', ')}');
       for (final key in dropKeys) {
-        map.remove(_unquote(key));
+        if (_unquote(key.table) == 'item') {
+          map.remove(_unquote(key.column));
+        }
       }
       final categoryId = map['category_id'] as int?;
       if (categoryId != null) {
         batch.getCategory(
           categoryId,
+          dropKeys: dropKeys,
           onCommit: (noResult, object) async {
             map['category_id'] = object;
             return object;
@@ -1535,6 +1560,7 @@ class _$ItemHelper {
       if (subCategoryId != null) {
         batch.getCategory(
           subCategoryId,
+          dropKeys: dropKeys,
           onCommit: (noResult, object) async {
             map['sub_category_id'] = object;
             return object;
@@ -1560,7 +1586,7 @@ class _$ItemHelper {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   }) async {
     var queryResult = await db.query(
       tableName,
@@ -1583,7 +1609,7 @@ class _$ItemHelper {
     String? orderBy,
     int? limit,
     int? offset,
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   }) {
     batch.query(
       tableName,
@@ -1611,7 +1637,7 @@ class _$ItemHelper {
   Future<Item?> get(
     int id,
     _$AppDatabaseExecutor db, [
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   ]) async {
     final result = await query(
       db,
@@ -1631,7 +1657,7 @@ class _$ItemHelper {
   void getBatch(
     int id,
     _$AppDatabaseBatchWrapper batch, [
-    List<String> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
   ]) {
     batch.query(
       tableName,

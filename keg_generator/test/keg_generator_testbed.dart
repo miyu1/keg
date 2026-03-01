@@ -10,10 +10,10 @@ void main() {
     });
 
     test('testGenerator function', () async {
-      await testGenerator('index_test');
+      await testGenerator('complex_test');
       //print('testGenerator output: ${output.join('\n')}');
-    });
-  });
+    }, timeout: const Timeout(Duration(hours: 1)));
+  }, timeout: const Timeout(Duration(hours: 1)));
 
 }
 

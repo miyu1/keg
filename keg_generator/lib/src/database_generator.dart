@@ -246,13 +246,13 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       buffer.writeln('@override Future<List<$table>> query$table({'
         'String? where, List<Object?>? whereArgs, '
         '  String? orderBy, int? limit, int? offset,'
-        '  List<String> dropKeys = const [] })');
+        '  List<({String table, String column})> dropKeys = const [] })');
       buffer.writeln('=>  ${variableName}Helper.query(this,'
         'where: where, whereArgs: whereArgs, orderBy: orderBy, '
         'limit: limit, offset: offset, dropKeys: dropKeys);');
       buffer.writeln('');
       buffer.writeln('@override Future<$table?> get$table(int id, '
-      '[List<String> dropKeys = const[]])');
+      '[List<({String table, String column})> dropKeys = const[]])');
       buffer.writeln('=> ${variableName}Helper.get(id, this, dropKeys);');
       buffer.writeln('');
       buffer.writeln('@override Future<int> delete$table({String? where,'
@@ -328,9 +328,9 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
       buffer.writeln('');
       buffer.writeln('Future<List<$table>> query$table({'
         'String? where, List<Object?>? whereArgs, '
-        '  String? orderBy, int? limit, int? offset, List<String> dropKeys = const []});');
+        '  String? orderBy, int? limit, int? offset, List<({String table, String column})> dropKeys = const []});');
       buffer.writeln('');
-      buffer.writeln('Future<$table?> get$table(int id, [List<String> dropKeys = const []]);');
+      buffer.writeln('Future<$table?> get$table(int id, [List<({String table, String column})> dropKeys = const []]);');
       buffer.writeln('');
       buffer.writeln('Future<int> delete$table({String? where, List<Object?>? whereArgs});');
       buffer.writeln('');      
@@ -371,12 +371,12 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
         '@override Future<List<$table>> query$table({',
         'String? where, List<Object?>? whereArgs, ',
         '  String? orderBy, int? limit, int? offset,',
-        '  List<String> dropKeys = const []})',
+        '  List<({String table, String column})> dropKeys = const []})',
         '=>  appdb.${variableName}Helper.query(this,',
         'where: where, whereArgs: whereArgs, orderBy: orderBy, ',
         'limit: limit, offset: offset, dropKeys:dropKeys);',
         '',
-        '@override Future<$table?> get$table(int id, [List<String> dropKeys = const []])',
+        '@override Future<$table?> get$table(int id, [List<({String table, String column})> dropKeys = const []])',
         '=> appdb.${variableName}Helper.get(id, this, dropKeys);',
         '',
         '@override Future<int> delete$table({String? where, List<Object?>? whereArgs,})',
@@ -485,7 +485,7 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
         'void query$table({',
         'String? where, List<Object?>? whereArgs, ',
         ' String? orderBy, int? limit, int? offset,',
-        ' List<String> dropKeys = const [], $onCommitArg}) {',
+        ' List<({String table, String column})> dropKeys = const [], $onCommitArg}) {',
         ' appdb.${variableName}Helper.queryBatch(this,',
         ' where: where, whereArgs: whereArgs, orderBy: orderBy, ',
         '  limit: limit, offset: offset, dropKeys: dropKeys);',
@@ -494,7 +494,7 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
         '  }',
         '}'
         '',
-        'void get$table(int id, {List<String> dropKeys = const [], $onCommitArg}) {',
+        'void get$table(int id, {List<({String table, String column})> dropKeys = const [], $onCommitArg}) {',
         ' appdb.${variableName}Helper.getBatch(id, this, dropKeys,);',
         '  if (onCommit != null) {',
         '    _addCallBack(callBackIndex-1, onCommit);',

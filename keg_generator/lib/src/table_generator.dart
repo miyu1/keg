@@ -8,6 +8,8 @@ import 'package:source_gen/source_gen.dart';
 import 'package:keg_annotation/keg_annotation.dart';
 
 class TableGenerator extends GeneratorForAnnotation<Table> {
+  String className = '';
+  String tableName = '';
   Map<String, _FieldInfo> _fieldMap = {};
   final List<String> _requiredPositional = [];
   final List<String> _optionalPositional = [];
@@ -36,8 +38,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     schemaVersion = 0;
     tableNameList = [];
 
-    final className = element.displayName;
-    final tableName = toSnakeCase(className);
+    className = element.displayName;
+    tableName = toSnakeCase(className);
 
     await _getSchemaVersion(className, buildStep);
     if (schemaVersion == 0) {
@@ -656,7 +658,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     lines.addAll([
       'Future<List<Map<String, Object?>>> convertReferences(',
       'List<Map<String, Object?>> mapList, _\$${appDbName}Executor db,',
-      ' List<String> dropKeys) async {',
+      ' List<({String table, String column})> dropKeys) async {',
     ]);
 
     for (final field in _fieldMap.values) {
@@ -732,9 +734,11 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '',
       '  // ignore: unused_local_variable',
       "  final id = map['id'] as int;",
-      "  //print('$className(\$id) \$dropKeys');",
+      "  //print('$className(\$id) \${dropKeys.map((e) => '\${_unquote(e.table)}.\${_unquote(e.column)}').join(', ')}');",
       'for (final key in dropKeys) {',
-      '  map.remove(_unquote(key));',
+      " if (_unquote(key.table) == '$tableName') {",
+      '  map.remove(_unquote(key.column));',
+      ' }',
       '}',
     ]);
 
@@ -750,7 +754,8 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         lines.addAll([
           "final ${field.name}Id = map['${field.columnName}'] as int?;",
           "if (${field.name}Id != null) {",
-          '  batch.get$className(${field.name}Id, onCommit: (noResult, object) async {',
+          '  batch.get$className(${field.name}Id, dropKeys: dropKeys,',
+          '  onCommit: (noResult, object) async {',
           "    map['${field.columnName}'] = object;",
           '    return object;',
           '});',
@@ -771,7 +776,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           "where:'\${appdb.$varName.column.${backLink.to}} = ?',",
           'whereArgs: [id],',
           "orderBy: '\${appdb.$varName.column.${backLink.order}} $asc',",
-          'dropKeys: [appdb.$varName.column.${backLink.to}],',
+          'dropKeys: [(table: appdb.$varName.tableName, column: appdb.$varName.column.${backLink.to}), ...dropKeys],',
           'onCommit: (noResult, object) async {',
           'if(noResult == true || object is! List<${field.className}>) {',
           "  throw StateError('returned object \$object is not expected type.');",
@@ -789,9 +794,9 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         var dropKeys = <String>[];
         if (field.type == .dtBackLinkMany) {
           final backLink = field.annotationObject as BackLink;
-          dropKeys.add("'${toSnakeCase(backLink.to)}'");
+          dropKeys.add("(table: appdb.$varName.tableName, column: '${toSnakeCase(backLink.to)}')");
         } else if (field.type == .dtManyReference) {
-          dropKeys.addAll(field.dropList.map((e) => "'$e'",));
+          dropKeys.addAll(field.dropList.map((e) => "(table: appdb.$varName.tableName, column:'$e')",));
         }
         for (final otherField in _fieldMap.values) {
           if (otherField.name == field.name) {
@@ -800,14 +805,15 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           if (otherField.className == field.className) {
             if (otherField.type == .dtBackLinkMany) {
               final backLink2 = otherField.annotationObject as BackLink;
-              dropKeys.add("'${toSnakeCase(backLink2.to)}'");
+              dropKeys.add("(table: appdb.$varName.tableName, column:'${toSnakeCase(backLink2.to)}')");
             } else if (otherField.type == .dtManyReference) {
-              dropKeys.addAll(otherField.dropList.map((e) => "'$e'",));
+              dropKeys.addAll(otherField.dropList.map((e) => "(table: appdb.$varName.tableName, column:'$e')",));
             }
           }
         }
         lines.addAll([
-          "if (!dropKeys.contains('${field.columnName}')) {",
+          //"if (!dropKeys.contains('${field.columnName}')) {",
+          "if (dropKeys.where((e) => _unquote(e.table) == '$tableName' && e.column == '${field.columnName}').isEmpty) {"
           'batch.rawQuery(',
           '${field.name}Sql,',
           '[id],',
@@ -828,7 +834,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           '    }',
           '      targetMapList.add(targetMap);',
           '  }',
-          "  targetMapList = await appdb.$varName.convertReferences(targetMapList, db, [${dropKeys.join(', ')}]);",
+          "  targetMapList = await appdb.$varName.convertReferences(targetMapList, db, [...dropKeys, ${dropKeys.join(', ')}]);",
           '  final targetList = targetMapList.map((targetMap) => ${field.className}.fromSqlMap(targetMap)).toList();',
           "  map['${field.columnName}'] = targetList;",
           '  return targetList;',
@@ -890,7 +896,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       'Future<List<$className>> query(_\$${appDbName}Executor db, '
           '  {String? where, List<Object?>? whereArgs, ',
       '  String? orderBy, int? limit, int? offset,',
-      '  List<String> dropKeys = const [], ',
+      '  List<({String table, String column})> dropKeys = const [], ',
       '  }) async {',
       '',
       '  var queryResult = await db.$queryCommand);',
@@ -901,7 +907,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       'void queryBatch($batch batch, ',
       '{String? where, List<Object?>? whereArgs, ',
       '  String? orderBy, int? limit, int? offset,',
-      '  List<String> dropKeys = const [], ',
+      '  List<({String table, String column})> dropKeys = const [], ',
       '  }) {',
       '  batch.$queryCommand',
       '  onCommit: (noResult, object) async {',
@@ -919,7 +925,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     // get
     lines.addAll([
       'Future<$className?> get(int id, _\$${appDbName}Executor db, [',
-      'List<String> dropKeys = const []]) async {',
+      'List<({String table, String column})> dropKeys = const []]) async {',
       '  final result = await query(db, ',
       "    where: '\${column.id} = ?',",
       '    whereArgs: [id],',
@@ -934,7 +940,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       '}',
       '',
       'void getBatch(int id, $batch batch, [',
-      '  List<String> dropKeys = const []]) {',
+      '  List<({String table, String column})> dropKeys = const []]) {',
       "  batch.query(tableName, where: '\${column.id} = ?', whereArgs: [id],",
       '    onCommit: (noResult, object) async {',
       '    if(noResult == true || object is! List<Map<String, Object?>>) {',
