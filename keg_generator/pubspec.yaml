@@ -1,5 +1,5 @@
 name: keg_generator
-description: sql helper generator for simplified database access.
+description: sql helper generator for simplified local database access.
 version: 0.1.0
 # repository: https://github.com/my_org/my_repo
 
@@ -11,9 +11,9 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  analyzer: ^9.0.0
-  build: ^4.0.3
-  source_gen: ^4.1.1
+  analyzer: ^10.2.0
+  build: ^4.0.4
+  source_gen: ^4.2.0
   # path: ^1.9.0
 
   keg_annotation:
@@ -24,8 +24,8 @@ dev_dependencies:
   test:
   build_test: ^3.5.4
   path: ^1.9.1
-  sqflite: ^2.4.2
-  sqflite_common_ffi: ^2.4.0+1
+  #sqflite: ^2.4.2
+  sqflite_common_ffi: ^2.4.0+2
   freezed_annotation: ^3.1.0
   freezed: ^3.2.5
   json_serializable: ^6.13.0
