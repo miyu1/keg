@@ -1924,6 +1924,7 @@ class _$UserHelper {
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
+    // set id if possible
     item.id = id;
 
     return id;
@@ -1946,6 +1947,7 @@ class _$UserHelper {
         if (noResult == true || object is! int) {
           throw StateError('returned object $object is not int.');
         }
+        // set id if possible
         item.id = object;
       }
       return object;
@@ -2414,6 +2416,7 @@ class _$OrderHelper {
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
+    // set id if possible
     item.id = id;
 
     final executor = db;
@@ -2522,6 +2525,7 @@ class _$OrderHelper {
         if (noResult == true || object is! int) {
           throw StateError('returned object $object is not int.');
         }
+        // set id if possible
         item.id = object;
       }
       // handle many to many relation for itemList
@@ -3125,6 +3129,7 @@ class _$CategoryHelper {
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
+    // set id if possible
     item.id = id;
 
     return id;
@@ -3147,6 +3152,7 @@ class _$CategoryHelper {
         if (noResult == true || object is! int) {
           throw StateError('returned object $object is not int.');
         }
+        // set id if possible
         item.id = object;
       }
       return object;
@@ -3539,6 +3545,7 @@ class _$ColorHelper {
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
+    // set id if possible
     item.id = id;
 
     return id;
@@ -3561,6 +3568,7 @@ class _$ColorHelper {
         if (noResult == true || object is! int) {
           throw StateError('returned object $object is not int.');
         }
+        // set id if possible
         item.id = object;
       }
       return object;
@@ -4061,6 +4069,7 @@ class _$ItemHelper {
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
+    // set id if possible
     item.id = id;
 
     final executor = db;
@@ -4126,6 +4135,7 @@ class _$ItemHelper {
         if (noResult == true || object is! int) {
           throw StateError('returned object $object is not int.');
         }
+        // set id if possible
         item.id = object;
       }
       // handle many to many relation for colorList
@@ -4683,6 +4693,7 @@ class _$OrderToItemHelper {
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
+    // set id if possible
     item.id = id;
 
     return id;
@@ -4705,6 +4716,7 @@ class _$OrderToItemHelper {
         if (noResult == true || object is! int) {
           throw StateError('returned object $object is not int.');
         }
+        // set id if possible
         item.id = object;
       }
       return object;
@@ -5109,6 +5121,7 @@ class _$ItemToColorHelper {
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
+    // set id if possible
     item.id = id;
 
     return id;
@@ -5131,6 +5144,7 @@ class _$ItemToColorHelper {
         if (noResult == true || object is! int) {
           throw StateError('returned object $object is not int.');
         }
+        // set id if possible
         item.id = object;
       }
       return object;

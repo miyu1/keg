@@ -1,6 +1,36 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'many_to_many_test.dart';
+part of 'freezed_test.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+Category _$CategoryFromJson(Map<String, dynamic> json) => Category(
+  json['name'] as String,
+  id: (json['id'] as num?)?.toInt() ?? 0,
+  itemList: json['itemList'] == null
+      ? const []
+      : Category._itemListFromJson(json['itemList'] as List),
+);
+
+Map<String, dynamic> _$CategoryToJson(Category instance) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'itemList': Category._itemListToJson(instance.itemList),
+};
+
+Item _$ItemFromJson(Map<String, dynamic> json) => Item(
+  json['name'] as String,
+  category: Item._categoryFromJson(json['category'] as String?),
+  id: (json['id'] as num?)?.toInt() ?? 0,
+);
+
+Map<String, dynamic> _$ItemToJson(Item instance) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'category': Item._categoryToJson(instance.category),
+};
 
 // **************************************************************************
 // DatabaseGenerator
@@ -10,13 +40,13 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
   @override
   _$AppDatabaseBatchWrapper batch();
 
-  /// Insert or update Order.
+  /// Insert or update Category.
   /// If id is 0, insert and sets id to generated value.
   /// If specified id already exists in table, update the record.
   /// If specified id does not exist in table, insert with the id.
-  Future<int> registerOrder(Order item);
+  Future<int> registerCategory(Category item);
 
-  Future<List<Order>> queryOrder({
+  Future<List<Category>> queryCategory({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
@@ -25,14 +55,14 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
     List<({String table, String column})> dropKeys = const [],
   });
 
-  Future<Order?> getOrder(
+  Future<Category?> getCategory(
     int id, [
     List<({String table, String column})> dropKeys = const [],
   ]);
 
-  Future<int> deleteOrder({String? where, List<Object?>? whereArgs});
+  Future<int> deleteCategory({String? where, List<Object?>? whereArgs});
 
-  Future<int> deleteOrderByIds(List<Order> itemList);
+  Future<int> deleteCategoryByIds(List<Category> itemList);
 
   /// Insert or update Item.
   /// If id is 0, insert and sets id to generated value.
@@ -57,30 +87,6 @@ abstract class _$AppDatabaseExecutor extends DatabaseExecutor {
   Future<int> deleteItem({String? where, List<Object?>? whereArgs});
 
   Future<int> deleteItemByIds(List<Item> itemList);
-
-  /// Insert or update OrderToItem.
-  /// If id is 0, insert and sets id to generated value.
-  /// If specified id already exists in table, update the record.
-  /// If specified id does not exist in table, insert with the id.
-  Future<int> registerOrderToItem(OrderToItem item);
-
-  Future<List<OrderToItem>> queryOrderToItem({
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    List<({String table, String column})> dropKeys = const [],
-  });
-
-  Future<OrderToItem?> getOrderToItem(
-    int id, [
-    List<({String table, String column})> dropKeys = const [],
-  ]);
-
-  Future<int> deleteOrderToItem({String? where, List<Object?>? whereArgs});
-
-  Future<int> deleteOrderToItemByIds(List<OrderToItem> itemList);
 }
 
 class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
@@ -100,18 +106,18 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   }
 
   @override
-  Future<int> registerOrder(Order item) =>
-      appdb.orderHelper.register(item, this);
+  Future<int> registerCategory(Category item) =>
+      appdb.categoryHelper.register(item, this);
 
   @override
-  Future<List<Order>> queryOrder({
+  Future<List<Category>> queryCategory({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
     int? limit,
     int? offset,
     List<({String table, String column})> dropKeys = const [],
-  }) => appdb.orderHelper.query(
+  }) => appdb.categoryHelper.query(
     this,
     where: where,
     whereArgs: whereArgs,
@@ -122,18 +128,18 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   );
 
   @override
-  Future<Order?> getOrder(
+  Future<Category?> getCategory(
     int id, [
     List<({String table, String column})> dropKeys = const [],
-  ]) => appdb.orderHelper.get(id, this, dropKeys);
+  ]) => appdb.categoryHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteOrder({String? where, List<Object?>? whereArgs}) =>
-      appdb.orderHelper.delete(this, where: where, whereArgs: whereArgs);
+  Future<int> deleteCategory({String? where, List<Object?>? whereArgs}) =>
+      appdb.categoryHelper.delete(this, where: where, whereArgs: whereArgs);
 
   @override
-  Future<int> deleteOrderByIds(List<Order> itemList) =>
-      appdb.orderHelper.deleteByIds(this, itemList);
+  Future<int> deleteCategoryByIds(List<Category> itemList) =>
+      appdb.categoryHelper.deleteByIds(this, itemList);
 
   @override
   Future<int> registerItem(Item item) => appdb.itemHelper.register(item, this);
@@ -169,42 +175,6 @@ class _$AppDatabaseTransactionWrapper implements _$AppDatabaseExecutor {
   @override
   Future<int> deleteItemByIds(List<Item> itemList) =>
       appdb.itemHelper.deleteByIds(this, itemList);
-
-  @override
-  Future<int> registerOrderToItem(OrderToItem item) =>
-      appdb.orderToItemHelper.register(item, this);
-
-  @override
-  Future<List<OrderToItem>> queryOrderToItem({
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    List<({String table, String column})> dropKeys = const [],
-  }) => appdb.orderToItemHelper.query(
-    this,
-    where: where,
-    whereArgs: whereArgs,
-    orderBy: orderBy,
-    limit: limit,
-    offset: offset,
-    dropKeys: dropKeys,
-  );
-
-  @override
-  Future<OrderToItem?> getOrderToItem(
-    int id, [
-    List<({String table, String column})> dropKeys = const [],
-  ]) => appdb.orderToItemHelper.get(id, this, dropKeys);
-
-  @override
-  Future<int> deleteOrderToItem({String? where, List<Object?>? whereArgs}) =>
-      appdb.orderToItemHelper.delete(this, where: where, whereArgs: whereArgs);
-
-  @override
-  Future<int> deleteOrderToItemByIds(List<OrderToItem> itemList) =>
-      appdb.orderToItemHelper.deleteByIds(this, itemList);
 
   // passthrough methods
   @override
@@ -401,17 +371,17 @@ class _$AppDatabaseBatchWrapper implements Batch {
     return result;
   }
 
-  void registerOrder(
-    Order item, [
+  void registerCategory(
+    Category item, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.orderHelper.registerBatch(item, this);
+    appdb.categoryHelper.registerBatch(item, this);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
   }
 
-  void queryOrder({
+  void queryCategory({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
@@ -420,7 +390,7 @@ class _$AppDatabaseBatchWrapper implements Batch {
     List<({String table, String column})> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.orderHelper.queryBatch(
+    appdb.categoryHelper.queryBatch(
       this,
       where: where,
       whereArgs: whereArgs,
@@ -434,33 +404,33 @@ class _$AppDatabaseBatchWrapper implements Batch {
     }
   }
 
-  void getOrder(
+  void getCategory(
     int id, {
     List<({String table, String column})> dropKeys = const [],
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.orderHelper.getBatch(id, this, dropKeys);
+    appdb.categoryHelper.getBatch(id, this, dropKeys);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
   }
 
-  void deleteOrder({
+  void deleteCategory({
     String? where,
     List<Object?>? whereArgs,
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   }) {
-    appdb.orderHelper.deleteBatch(this, where: where, whereArgs: whereArgs);
+    appdb.categoryHelper.deleteBatch(this, where: where, whereArgs: whereArgs);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
   }
 
-  void deleteOrderByIds(
-    List<Order> itemList, [
+  void deleteCategoryByIds(
+    List<Category> itemList, [
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
-    appdb.orderHelper.deleteByIdsBatch(this, itemList);
+    appdb.categoryHelper.deleteByIdsBatch(this, itemList);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -526,75 +496,6 @@ class _$AppDatabaseBatchWrapper implements Batch {
     Future<Object?> Function(bool? noResult, Object?)? onCommit,
   ]) {
     appdb.itemHelper.deleteByIdsBatch(this, itemList);
-    if (onCommit != null) {
-      _addCallBack(callBackIndex - 1, onCommit);
-    }
-  }
-
-  void registerOrderToItem(
-    OrderToItem item, [
-    Future<Object?> Function(bool? noResult, Object?)? onCommit,
-  ]) {
-    appdb.orderToItemHelper.registerBatch(item, this);
-    if (onCommit != null) {
-      _addCallBack(callBackIndex - 1, onCommit);
-    }
-  }
-
-  void queryOrderToItem({
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    List<({String table, String column})> dropKeys = const [],
-    Future<Object?> Function(bool? noResult, Object?)? onCommit,
-  }) {
-    appdb.orderToItemHelper.queryBatch(
-      this,
-      where: where,
-      whereArgs: whereArgs,
-      orderBy: orderBy,
-      limit: limit,
-      offset: offset,
-      dropKeys: dropKeys,
-    );
-    if (onCommit != null) {
-      _addCallBack(callBackIndex - 1, onCommit);
-    }
-  }
-
-  void getOrderToItem(
-    int id, {
-    List<({String table, String column})> dropKeys = const [],
-    Future<Object?> Function(bool? noResult, Object?)? onCommit,
-  }) {
-    appdb.orderToItemHelper.getBatch(id, this, dropKeys);
-    if (onCommit != null) {
-      _addCallBack(callBackIndex - 1, onCommit);
-    }
-  }
-
-  void deleteOrderToItem({
-    String? where,
-    List<Object?>? whereArgs,
-    Future<Object?> Function(bool? noResult, Object?)? onCommit,
-  }) {
-    appdb.orderToItemHelper.deleteBatch(
-      this,
-      where: where,
-      whereArgs: whereArgs,
-    );
-    if (onCommit != null) {
-      _addCallBack(callBackIndex - 1, onCommit);
-    }
-  }
-
-  void deleteOrderToItemByIds(
-    List<OrderToItem> itemList, [
-    Future<Object?> Function(bool? noResult, Object?)? onCommit,
-  ]) {
-    appdb.orderToItemHelper.deleteByIdsBatch(this, itemList);
     if (onCommit != null) {
       _addCallBack(callBackIndex - 1, onCommit);
     }
@@ -764,9 +665,8 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   @override
   late Database database;
 
-  late final orderHelper = _$OrderHelper(this);
+  late final categoryHelper = _$CategoryHelper(this);
   late final itemHelper = _$ItemHelper(this);
-  late final orderToItemHelper = _$OrderToItemHelper(this);
 
   Future<String> getPathToOpen();
 
@@ -789,17 +689,15 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
 
   Future<void> onCreate(Database db, int version) async {
     final batch = db.batch();
-    await orderHelper.onCreate(version, batch: batch);
+    await categoryHelper.onCreate(version, batch: batch);
     await itemHelper.onCreate(version, batch: batch);
-    await orderToItemHelper.onCreate(version, batch: batch);
     await batch.commit();
   }
 
   Future<void> onUpgrade(Database db, int oldVersion, int newVersion) async {
     final batch = db.batch();
-    await orderHelper.onUpgrade(oldVersion, newVersion, batch: batch);
+    await categoryHelper.onUpgrade(oldVersion, newVersion, batch: batch);
     await itemHelper.onUpgrade(oldVersion, newVersion, batch: batch);
-    await orderToItemHelper.onUpgrade(oldVersion, newVersion, batch: batch);
     await batch.commit();
   }
 
@@ -811,22 +709,23 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
     // do nothing
   }
 
-  /// Insert or update Order.
+  /// Insert or update Category.
   /// If id is 0, insert and sets id to generated value.
   /// If specified id already exists in table, update the record.
   /// If specified id does not exist in table, insert with the id.
   @override
-  Future<int> registerOrder(Order item) => orderHelper.register(item, this);
+  Future<int> registerCategory(Category item) =>
+      categoryHelper.register(item, this);
 
   @override
-  Future<List<Order>> queryOrder({
+  Future<List<Category>> queryCategory({
     String? where,
     List<Object?>? whereArgs,
     String? orderBy,
     int? limit,
     int? offset,
     List<({String table, String column})> dropKeys = const [],
-  }) => orderHelper.query(
+  }) => categoryHelper.query(
     this,
     where: where,
     whereArgs: whereArgs,
@@ -837,18 +736,18 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   );
 
   @override
-  Future<Order?> getOrder(
+  Future<Category?> getCategory(
     int id, [
     List<({String table, String column})> dropKeys = const [],
-  ]) => orderHelper.get(id, this, dropKeys);
+  ]) => categoryHelper.get(id, this, dropKeys);
 
   @override
-  Future<int> deleteOrder({String? where, List<Object?>? whereArgs}) =>
-      orderHelper.delete(this, where: where, whereArgs: whereArgs);
+  Future<int> deleteCategory({String? where, List<Object?>? whereArgs}) =>
+      categoryHelper.delete(this, where: where, whereArgs: whereArgs);
 
   @override
-  Future<int> deleteOrderByIds(List<Order> itemsList) =>
-      orderHelper.deleteByIds(this, itemsList);
+  Future<int> deleteCategoryByIds(List<Category> itemsList) =>
+      categoryHelper.deleteByIds(this, itemsList);
 
   /// Insert or update Item.
   /// If id is 0, insert and sets id to generated value.
@@ -888,46 +787,6 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
   @override
   Future<int> deleteItemByIds(List<Item> itemsList) =>
       itemHelper.deleteByIds(this, itemsList);
-
-  /// Insert or update OrderToItem.
-  /// If id is 0, insert and sets id to generated value.
-  /// If specified id already exists in table, update the record.
-  /// If specified id does not exist in table, insert with the id.
-  @override
-  Future<int> registerOrderToItem(OrderToItem item) =>
-      orderToItemHelper.register(item, this);
-
-  @override
-  Future<List<OrderToItem>> queryOrderToItem({
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    List<({String table, String column})> dropKeys = const [],
-  }) => orderToItemHelper.query(
-    this,
-    where: where,
-    whereArgs: whereArgs,
-    orderBy: orderBy,
-    limit: limit,
-    offset: offset,
-    dropKeys: dropKeys,
-  );
-
-  @override
-  Future<OrderToItem?> getOrderToItem(
-    int id, [
-    List<({String table, String column})> dropKeys = const [],
-  ]) => orderToItemHelper.get(id, this, dropKeys);
-
-  @override
-  Future<int> deleteOrderToItem({String? where, List<Object?>? whereArgs}) =>
-      orderToItemHelper.delete(this, where: where, whereArgs: whereArgs);
-
-  @override
-  Future<int> deleteOrderToItemByIds(List<OrderToItem> itemsList) =>
-      orderToItemHelper.deleteByIds(this, itemsList);
 
   Future<T> transaction<T>(
     Future<T> Function(_$AppDatabaseTransactionWrapper txn) action, {
@@ -1080,20 +939,20 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
 // TableGenerator
 // **************************************************************************
 
-class _$OrderHelper {
-  final String tableName = '"order"';
-  final column = (id: '"id"', user: '"user"');
+class _$CategoryHelper {
+  final String tableName = '"category"';
+  final column = (id: '"id"', name: '"name"');
   final columnTypes = {
     'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
-    'user': 'TEXT NOT NULL DEFAULT \'\'',
+    'name': 'TEXT NOT NULL DEFAULT \'\'',
   };
-  final columnList = ['id', 'user'];
+  final columnList = ['id', 'name'];
 
   _$AppDatabase appdb;
 
-  _$OrderHelper(this.appdb);
+  _$CategoryHelper(this.appdb);
 
-  static final v1ColumnList = ['id', 'user'];
+  static final v1ColumnList = ['id', 'name'];
   final columnListByVersion = {1: v1ColumnList};
 
   /// on create database table
@@ -1110,7 +969,9 @@ class _$OrderHelper {
       columnList.addAll(oneColumnList);
     }
     if (columnList.isEmpty) {
-      throw UnsupportedError("No columns defined for Order version $version");
+      throw UnsupportedError(
+        "No columns defined for Category version $version",
+      );
     }
     var params = [];
     for (final column in columnList) {
@@ -1159,14 +1020,14 @@ class _$OrderHelper {
     }
   }
 
-  static Map<String, Object?> toSqlMap(Order item) {
+  static Map<String, Object?> toSqlMap(Category item) {
     final values = <String, Object?>{};
 
     if (item.id != 0) {
       values['id'] = item.id;
     }
 
-    values['user'] = item.user;
+    values['name'] = item.name;
 
     return values;
   }
@@ -1188,12 +1049,11 @@ class _$OrderHelper {
     return newMap;
   }
 
-  static Order fromSqlMap(Map<String, Object?> map) {
+  static Category fromSqlMap(Map<String, Object?> map) {
     map = _unquoteMap(map);
     final keys = map.keys.toSet();
-    final params = <String, Object>{};
-    if (!keys.contains('user')) {
-      throw ArgumentError("Missing required key user in map");
+    if (!keys.contains('name')) {
+      throw ArgumentError("Missing required key name in map");
     }
 
     var id = 0;
@@ -1202,115 +1062,25 @@ class _$OrderHelper {
       keys.remove('id');
     }
 
-    final user = map['user'] as String;
-    keys.remove('user');
+    final name = map['name'] as String;
+    keys.remove('name');
 
+    List<Item> itemList = const [];
     if (keys.contains('item_list')) {
-      params['itemList'] = map['item_list'] as List<Item>;
+      itemList = map['item_list'] as List<Item>;
       keys.remove('item_list');
-    }
-
-    if (keys.contains('item_list2')) {
-      params['itemList2'] = map['item_list2'] as List<Item>;
-      keys.remove('item_list2');
     }
 
     if (keys.isNotEmpty) {
       throw ArgumentError('Unkown map keys. $keys');
     }
 
-    final $item = Order(user, id: id);
+    final $item = Category(name, id: id, itemList: itemList);
 
-    if (params['itemList'] != null) {
-      $item.itemList = params['itemList'] as List<Item>;
-    }
-    if (params['itemList2'] != null) {
-      $item.itemList2 = params['itemList2'] as List<Item>;
-    }
     return $item;
   }
 
-  bool compareItemList(Order item1, Set<int> set2) {
-    if (item1.itemList.length != set2.length) {
-      return false;
-    }
-    final list1 = item1.itemList.map((e) => e.id).toList();
-    for (final item in list1) {
-      if (!set2.contains(item)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool compareItemList2(Order item1, Set<int> set2) {
-    if (item1.itemList2.length != set2.length) {
-      return false;
-    }
-    final list1 = item1.itemList2.map((e) => e.id).toList();
-    for (final item in list1) {
-      if (!set2.contains(item)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  Future<void> registerItemList(
-    Order item,
-    _$AppDatabaseExecutor executor,
-  ) async {
-    final batch = executor.batch();
-    for (final target in item.itemList) {
-      Map<String, Object?> middleMap = {};
-      middleMap[appdb.orderToItemHelper.column.order] = item;
-      middleMap[appdb.orderToItemHelper.column.item] = target;
-      middleMap[appdb.orderToItemHelper.column.field] = 'itemList';
-      final middle = OrderToItem.fromSqlMap(middleMap);
-      batch.registerOrderToItem(middle);
-    }
-    await batch.commit();
-  }
-
-  Future<void> registerItemList2(
-    Order item,
-    _$AppDatabaseExecutor executor,
-  ) async {
-    final batch = executor.batch();
-    for (final target in item.itemList2) {
-      Map<String, Object?> middleMap = {};
-      middleMap[appdb.orderToItemHelper.column.order] = item;
-      middleMap[appdb.orderToItemHelper.column.item] = target;
-      middleMap[appdb.orderToItemHelper.column.field] = 'itemList2';
-      final middle = OrderToItem.fromSqlMap(middleMap);
-      batch.registerOrderToItem(middle);
-    }
-    await batch.commit();
-  }
-
-  Future<int> register(Order item, _$AppDatabaseExecutor db) async {
-    final itemListNoids = item.itemList.where((e) => e.id == 0);
-    if (itemListNoids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot register Order because itemList has unregistered items.',
-      );
-    }
-    if (item.itemList.length != item.itemList.toSet().length) {
-      throw ArgumentError(
-        'Cannot register Order because itemList has duplicate items.',
-      );
-    }
-    final itemList2Noids = item.itemList2.where((e) => e.id == 0);
-    if (itemList2Noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot register Order because itemList2 has unregistered items.',
-      );
-    }
-    if (item.itemList2.length != item.itemList2.toSet().length) {
-      throw ArgumentError(
-        'Cannot register Order because itemList2 has duplicate items.',
-      );
-    }
+  Future<int> register(Category item, _$AppDatabaseExecutor db) async {
     final map = item.toSqlMap();
     var command = 'REPLACE INTO';
     final originalId = item.id;
@@ -1324,94 +1094,11 @@ class _$OrderHelper {
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
     // set id if possible
-    item.id = id;
-
-    final executor = db;
-    // handle many to many relation for itemList
-    bool addItemList = true;
-    if (originalId != 0) {
-      // compare existing middle records
-      final existingMiddleList = await executor.query(
-        appdb.orderToItemHelper.tableName,
-        where:
-            '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
-        whereArgs: [originalId, 'itemList'],
-      );
-      final existingTargetIds = existingMiddleList
-          .where((e) => e[appdb.orderToItemHelper.column.item] != null)
-          .map((e) => e[appdb.orderToItemHelper.column.item] as int)
-          .toSet();
-      if (!compareItemList(item, existingTargetIds)) {
-        // delete middle records
-        await executor.deleteOrderToItem(
-          where:
-              '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
-          whereArgs: [originalId, 'itemList'],
-        );
-      } else {
-        addItemList = false;
-      }
-    }
-    if (addItemList) {
-      // register middle records
-      await registerItemList(item, executor);
-    }
-    // handle many to many relation for itemList2
-    bool addItemList2 = true;
-    if (originalId != 0) {
-      // compare existing middle records
-      final existingMiddleList = await executor.query(
-        appdb.orderToItemHelper.tableName,
-        where:
-            '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
-        whereArgs: [originalId, 'itemList2'],
-      );
-      final existingTargetIds = existingMiddleList
-          .where((e) => e[appdb.orderToItemHelper.column.item] != null)
-          .map((e) => e[appdb.orderToItemHelper.column.item] as int)
-          .toSet();
-      if (!compareItemList2(item, existingTargetIds)) {
-        // delete middle records
-        await executor.deleteOrderToItem(
-          where:
-              '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
-          whereArgs: [originalId, 'itemList2'],
-        );
-      } else {
-        addItemList2 = false;
-      }
-    }
-    if (addItemList2) {
-      // register middle records
-      await registerItemList2(item, executor);
-    }
 
     return id;
   }
 
-  void registerBatch(Order item, _$AppDatabaseBatchWrapper batch) {
-    final itemListNoids = item.itemList.where((e) => e.id == 0);
-    if (itemListNoids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot register Order because itemList has unregistered items.',
-      );
-    }
-    if (item.itemList.length != item.itemList.toSet().length) {
-      throw ArgumentError(
-        'Cannot register Order because itemList has duplicate items.',
-      );
-    }
-    final itemList2Noids = item.itemList2.where((e) => e.id == 0);
-    if (itemList2Noids.isNotEmpty) {
-      throw ArgumentError(
-        'Cannot register Order because itemList2 has unregistered items.',
-      );
-    }
-    if (item.itemList2.length != item.itemList2.toSet().length) {
-      throw ArgumentError(
-        'Cannot register Order because itemList2 has duplicate items.',
-      );
-    }
+  void registerBatch(Category item, _$AppDatabaseBatchWrapper batch) {
     final map = item.toSqlMap();
     var command = 'REPLACE INTO';
     final originalId = item.id;
@@ -1424,71 +1111,11 @@ class _$OrderHelper {
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
-      final executor = batch.executor;
       if (item.id == 0) {
         if (noResult == true || object is! int) {
           throw StateError('returned object $object is not int.');
         }
         // set id if possible
-        item.id = object;
-      }
-      // handle many to many relation for itemList
-      bool addItemList = true;
-      if (originalId != 0) {
-        // compare existing middle records
-        final existingMiddleList = await executor.query(
-          appdb.orderToItemHelper.tableName,
-          where:
-              '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
-          whereArgs: [originalId, 'itemList'],
-        );
-        final existingTargetIds = existingMiddleList
-            .where((e) => e[appdb.orderToItemHelper.column.item] != null)
-            .map((e) => e[appdb.orderToItemHelper.column.item] as int)
-            .toSet();
-        if (!compareItemList(item, existingTargetIds)) {
-          // delete middle records
-          await executor.deleteOrderToItem(
-            where:
-                '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
-            whereArgs: [originalId, 'itemList'],
-          );
-        } else {
-          addItemList = false;
-        }
-      }
-      if (addItemList) {
-        // register middle records
-        await registerItemList(item, executor);
-      }
-      // handle many to many relation for itemList2
-      bool addItemList2 = true;
-      if (originalId != 0) {
-        // compare existing middle records
-        final existingMiddleList = await executor.query(
-          appdb.orderToItemHelper.tableName,
-          where:
-              '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
-          whereArgs: [originalId, 'itemList2'],
-        );
-        final existingTargetIds = existingMiddleList
-            .where((e) => e[appdb.orderToItemHelper.column.item] != null)
-            .map((e) => e[appdb.orderToItemHelper.column.item] as int)
-            .toSet();
-        if (!compareItemList2(item, existingTargetIds)) {
-          // delete middle records
-          await executor.deleteOrderToItem(
-            where:
-                '${appdb.orderToItemHelper.column.order} = ? AND ${appdb.orderToItemHelper.column.field} = ?',
-            whereArgs: [originalId, 'itemList2'],
-          );
-        } else {
-          addItemList2 = false;
-        }
-      }
-      if (addItemList2) {
-        // register middle records
-        await registerItemList2(item, executor);
       }
       return object;
     });
@@ -1499,48 +1126,6 @@ class _$OrderHelper {
     _$AppDatabaseExecutor db,
     List<({String table, String column})> dropKeys,
   ) async {
-    final itemListColumnList = <String>[];
-    for (final col in appdb.orderToItemHelper.columnList) {
-      itemListColumnList.add(
-        '${appdb.orderToItemHelper.tableName}."$col" as "${_unquote(appdb.orderToItemHelper.tableName)}-$col"',
-      );
-    }
-    for (final col in appdb.itemHelper.columnList) {
-      itemListColumnList.add(
-        '${appdb.itemHelper.tableName}."$col" as "${_unquote(appdb.itemHelper.tableName)}-$col"',
-      );
-    }
-    final itemListSql =
-        '''SELECT ${itemListColumnList.join(', ')} 
-        FROM ${appdb.orderToItemHelper.tableName} 
-        INNER JOIN ${appdb.itemHelper.tableName} 
-        ON ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.item} = 
-        ${appdb.itemHelper.tableName}."id" 
-        WHERE ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.order} = ? 
-        AND ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.field} ='itemList' 
-        ORDER BY ${appdb.itemHelper.tableName}.${appdb.itemHelper.column.name} DESC''';
-
-    final itemList2ColumnList = <String>[];
-    for (final col in appdb.orderToItemHelper.columnList) {
-      itemList2ColumnList.add(
-        '${appdb.orderToItemHelper.tableName}."$col" as "${_unquote(appdb.orderToItemHelper.tableName)}-$col"',
-      );
-    }
-    for (final col in appdb.itemHelper.columnList) {
-      itemList2ColumnList.add(
-        '${appdb.itemHelper.tableName}."$col" as "${_unquote(appdb.itemHelper.tableName)}-$col"',
-      );
-    }
-    final itemList2Sql =
-        '''SELECT ${itemList2ColumnList.join(', ')} 
-        FROM ${appdb.orderToItemHelper.tableName} 
-        INNER JOIN ${appdb.itemHelper.tableName} 
-        ON ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.item} = 
-        ${appdb.itemHelper.tableName}."id" 
-        WHERE ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.order} = ? 
-        AND ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.field} ='itemList2' 
-        ORDER BY ${appdb.itemHelper.tableName}.${appdb.itemHelper.column.name} DESC''';
-
     var result = mapList;
     result = result.toList(); // convert to modifiable list
     final batch = db.batch();
@@ -1552,87 +1137,31 @@ class _$OrderHelper {
 
       // ignore: unused_local_variable
       final id = map['id'] as int;
-      //print('Order($id) ${dropKeys.map((e) => '${_unquote(e.table)}.${_unquote(e.column)}').join(', ')}');
+      //print('Category($id) ${dropKeys.map((e) => '${_unquote(e.table)}.${_unquote(e.column)}').join(', ')}');
       for (final key in dropKeys) {
-        if (_unquote(key.table) == 'order') {
+        if (_unquote(key.table) == 'category') {
           map.remove(_unquote(key.column));
         }
       }
-      if (dropKeys
-          .where((e) => _unquote(e.table) == 'order' && e.column == 'item_list')
-          .isEmpty) {
-        batch.rawQuery(itemListSql, [id], (noResult, object) async {
-          if (noResult == true || object is! List<Map<String, Object?>>) {
+      batch.queryItem(
+        where: '${appdb.itemHelper.column.category} = ?',
+        whereArgs: [id],
+        orderBy: '${appdb.itemHelper.column.name} ASC',
+        dropKeys: [
+          (
+            table: appdb.itemHelper.tableName,
+            column: appdb.itemHelper.column.category,
+          ),
+          ...dropKeys,
+        ],
+        onCommit: (noResult, object) async {
+          if (noResult == true || object is! List<Item>) {
             throw StateError('returned object $object is not expected type.');
           }
-          final middleList = object;
-          var targetMapList = <Map<String, Object?>>[];
-          for (final middleMap in middleList) {
-            final targetMap = <String, Object?>{};
-            for (final key in middleMap.keys) {
-              if (key.startsWith('${_unquote(appdb.itemHelper.tableName)}-')) {
-                final newKey = key.substring(
-                  _unquote(appdb.itemHelper.tableName).length + 1,
-                );
-                targetMap[newKey] = middleMap[key];
-              }
-            }
-            targetMapList.add(targetMap);
-          }
-          targetMapList = await appdb.itemHelper.convertReferences(
-            targetMapList,
-            db,
-            [
-              ...dropKeys,
-              (table: appdb.itemHelper.tableName, column: 'order_list'),
-            ],
-          );
-          final targetList = targetMapList
-              .map((targetMap) => Item.fromSqlMap(targetMap))
-              .toList();
-          map['item_list'] = targetList;
-          return targetList;
-        });
-      }
-
-      if (dropKeys
-          .where(
-            (e) => _unquote(e.table) == 'order' && e.column == 'item_list2',
-          )
-          .isEmpty) {
-        batch.rawQuery(itemList2Sql, [id], (noResult, object) async {
-          if (noResult == true || object is! List<Map<String, Object?>>) {
-            throw StateError('returned object $object is not expected type.');
-          }
-          final middleList = object;
-          var targetMapList = <Map<String, Object?>>[];
-          for (final middleMap in middleList) {
-            final targetMap = <String, Object?>{};
-            for (final key in middleMap.keys) {
-              if (key.startsWith('${_unquote(appdb.itemHelper.tableName)}-')) {
-                final newKey = key.substring(
-                  _unquote(appdb.itemHelper.tableName).length + 1,
-                );
-                targetMap[newKey] = middleMap[key];
-              }
-            }
-            targetMapList.add(targetMap);
-          }
-          targetMapList = await appdb.itemHelper.convertReferences(
-            targetMapList,
-            db,
-            [
-              ...dropKeys,
-              (table: appdb.itemHelper.tableName, column: 'order_list'),
-            ],
-          );
-          final targetList = targetMapList
-              .map((targetMap) => Item.fromSqlMap(targetMap))
-              .toList();
-          map['item_list2'] = targetList;
-          return targetList;
-        });
-      }
+          map['item_list'] = object;
+          return object;
+        },
+      );
     }
     await batch.commit();
 
@@ -1640,12 +1169,19 @@ class _$OrderHelper {
   }
 
   /// convert map list from sql query to object list
-  List<Order> mapToObject(List<Map<String, Object?>> mapList) {
-    final result = mapList.map((map) => Order.fromSqlMap(map)).toList();
+  List<Category> mapToObject(List<Map<String, Object?>> mapList) {
+    final result = mapList.map((map) => Category.fromSqlMap(map)).toList();
+    for (final object in result) {
+      for (var i = 0; i < object.itemList.length; i++) {
+        final item = object.itemList[i];
+        final item2 = item.copyWith(category: object);
+        object.itemList[i] = item2;
+      }
+    }
     return result;
   }
 
-  Future<List<Order>> query(
+  Future<List<Category>> query(
     _$AppDatabaseExecutor db, {
     String? where,
     List<Object?>? whereArgs,
@@ -1700,7 +1236,7 @@ class _$OrderHelper {
     );
   }
 
-  Future<Order?> get(
+  Future<Category?> get(
     int id,
     _$AppDatabaseExecutor db, [
     List<({String table, String column})> dropKeys = const [],
@@ -1755,17 +1291,6 @@ class _$OrderHelper {
     String? where,
     List<Object?>? whereArgs,
   }) async {
-    // delete many to many middle records
-    await db.deleteOrderToItem(
-      where:
-          '${appdb.orderToItemHelper.column.order} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
-      whereArgs: whereArgs,
-    );
-    await db.deleteOrderToItem(
-      where:
-          '${appdb.orderToItemHelper.column.order} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
-      whereArgs: whereArgs,
-    );
     return db.delete(tableName, where: where, whereArgs: whereArgs);
   }
 
@@ -1774,42 +1299,18 @@ class _$OrderHelper {
     String? where,
     List<Object?>? whereArgs,
   }) async {
-    // delete many to many middle records
-    batch.deleteOrderToItem(
-      where:
-          '${appdb.orderToItemHelper.column.order} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
-      whereArgs: whereArgs,
-    );
-    batch.deleteOrderToItem(
-      where:
-          '${appdb.orderToItemHelper.column.order} in (SELECT id FROM $tableName  ${where != null ? ' WHERE $where' : ''})',
-      whereArgs: whereArgs,
-    );
     batch.delete(tableName, where: where, whereArgs: whereArgs);
   }
 
   Future<int> deleteByIds(
     _$AppDatabaseExecutor db,
-    List<Order> itemList,
+    List<Category> itemList,
   ) async {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError('Cannot delete Order because id is 0.');
+      throw ArgumentError('Cannot delete Category because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
-
-    // delete many to many middle records for itemList
-    await db.deleteOrderToItem(
-      where:
-          '${appdb.orderToItemHelper.column.order} in (${List.filled(ids.length, '?').join(',')})',
-      whereArgs: ids,
-    );
-    // delete many to many middle records for itemList2
-    await db.deleteOrderToItem(
-      where:
-          '${appdb.orderToItemHelper.column.order} in (${List.filled(ids.length, '?').join(',')})',
-      whereArgs: ids,
-    );
 
     final count = await db.delete(
       tableName,
@@ -1819,25 +1320,15 @@ class _$OrderHelper {
     return count;
   }
 
-  void deleteByIdsBatch(_$AppDatabaseBatchWrapper batch, List<Order> itemList) {
+  void deleteByIdsBatch(
+    _$AppDatabaseBatchWrapper batch,
+    List<Category> itemList,
+  ) {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
-      throw ArgumentError('Cannot delete Order because id is 0.');
+      throw ArgumentError('Cannot delete Category because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
-
-    // delete many to many middle records for itemList
-    batch.deleteOrderToItem(
-      where:
-          '${appdb.orderToItemHelper.column.order} in (${List.filled(ids.length, '?').join(',')})',
-      whereArgs: ids,
-    );
-    // delete many to many middle records for itemList2
-    batch.deleteOrderToItem(
-      where:
-          '${appdb.orderToItemHelper.column.order} in (${List.filled(ids.length, '?').join(',')})',
-      whereArgs: ids,
-    );
 
     batch.delete(
       tableName,
@@ -1849,18 +1340,19 @@ class _$OrderHelper {
 
 class _$ItemHelper {
   final String tableName = '"item"';
-  final column = (id: '"id"', name: '"name"');
+  final column = (id: '"id"', name: '"name"', category: '"category_id"');
   final columnTypes = {
     'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
     'name': 'TEXT NOT NULL DEFAULT \'\'',
+    'category_id': 'INTEGER REFERENCES "category"("id")',
   };
-  final columnList = ['id', 'name'];
+  final columnList = ['id', 'name', 'category_id'];
 
   _$AppDatabase appdb;
 
   _$ItemHelper(this.appdb);
 
-  static final v1ColumnList = ['id', 'name'];
+  static final v1ColumnList = ['id', 'name', 'category_id'];
   final columnListByVersion = {1: v1ColumnList};
 
   /// on create database table
@@ -1935,6 +1427,15 @@ class _$ItemHelper {
 
     values['name'] = item.name;
 
+    if (item.category != null) {
+      final categoryId = item.category!.id;
+      if (categoryId != 0) {
+        values['category_id'] = categoryId;
+      } else {
+        throw StateError('Item.category.id is 0.');
+      }
+    }
+
     return values;
   }
 
@@ -1958,7 +1459,6 @@ class _$ItemHelper {
   static Item fromSqlMap(Map<String, Object?> map) {
     map = _unquoteMap(map);
     final keys = map.keys.toSet();
-    final params = <String, Object>{};
     if (!keys.contains('name')) {
       throw ArgumentError("Missing required key name in map");
     }
@@ -1972,20 +1472,18 @@ class _$ItemHelper {
     final name = map['name'] as String;
     keys.remove('name');
 
-    if (keys.contains('order_list')) {
-      params['orderList'] = map['order_list'] as List<Order>;
-      keys.remove('order_list');
+    Category? category;
+    if (keys.contains('category_id')) {
+      category = map['category_id'] as Category?;
+      keys.remove('category_id');
     }
 
     if (keys.isNotEmpty) {
       throw ArgumentError('Unkown map keys. $keys');
     }
 
-    final $item = Item(name, id: id);
+    final $item = Item(name, id: id, category: category);
 
-    if (params['orderList'] != null) {
-      $item.orderList = params['orderList'] as List<Order>;
-    }
     return $item;
   }
 
@@ -2003,7 +1501,6 @@ class _$ItemHelper {
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
     // set id if possible
-    item.id = id;
 
     return id;
   }
@@ -2026,7 +1523,6 @@ class _$ItemHelper {
           throw StateError('returned object $object is not int.');
         }
         // set id if possible
-        item.id = object;
       }
       return object;
     });
@@ -2037,27 +1533,6 @@ class _$ItemHelper {
     _$AppDatabaseExecutor db,
     List<({String table, String column})> dropKeys,
   ) async {
-    final orderListColumnList = <String>[];
-    for (final col in appdb.orderToItemHelper.columnList) {
-      orderListColumnList.add(
-        '${appdb.orderToItemHelper.tableName}."$col" as "${_unquote(appdb.orderToItemHelper.tableName)}-$col"',
-      );
-    }
-    for (final col in appdb.orderHelper.columnList) {
-      orderListColumnList.add(
-        '${appdb.orderHelper.tableName}."$col" as "${_unquote(appdb.orderHelper.tableName)}-$col"',
-      );
-    }
-    final orderListSql =
-        '''SELECT ${orderListColumnList.join(', ')} 
-        FROM ${appdb.orderToItemHelper.tableName} 
-        INNER JOIN ${appdb.orderHelper.tableName} 
-        ON ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.order} = 
-        ${appdb.orderHelper.tableName}."id" 
-        WHERE ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.item} = ? 
-        AND ${appdb.orderToItemHelper.tableName}.${appdb.orderToItemHelper.column.field} ='itemList' 
-        ORDER BY ${appdb.orderHelper.tableName}.${appdb.orderHelper.column.id} ASC''';
-
     var result = mapList;
     result = result.toList(); // convert to modifiable list
     final batch = db.batch();
@@ -2075,41 +1550,16 @@ class _$ItemHelper {
           map.remove(_unquote(key.column));
         }
       }
-      if (dropKeys
-          .where((e) => _unquote(e.table) == 'item' && e.column == 'order_list')
-          .isEmpty) {
-        batch.rawQuery(orderListSql, [id], (noResult, object) async {
-          if (noResult == true || object is! List<Map<String, Object?>>) {
-            throw StateError('returned object $object is not expected type.');
-          }
-          final middleList = object;
-          var targetMapList = <Map<String, Object?>>[];
-          for (final middleMap in middleList) {
-            final targetMap = <String, Object?>{};
-            for (final key in middleMap.keys) {
-              if (key.startsWith('${_unquote(appdb.orderHelper.tableName)}-')) {
-                final newKey = key.substring(
-                  _unquote(appdb.orderHelper.tableName).length + 1,
-                );
-                targetMap[newKey] = middleMap[key];
-              }
-            }
-            targetMapList.add(targetMap);
-          }
-          targetMapList = await appdb.orderHelper.convertReferences(
-            targetMapList,
-            db,
-            [
-              ...dropKeys,
-              (table: appdb.orderHelper.tableName, column: 'item_list'),
-            ],
-          );
-          final targetList = targetMapList
-              .map((targetMap) => Order.fromSqlMap(targetMap))
-              .toList();
-          map['order_list'] = targetList;
-          return targetList;
-        });
+      final categoryId = map['category_id'] as int?;
+      if (categoryId != null) {
+        batch.getCategory(
+          categoryId,
+          dropKeys: dropKeys,
+          onCommit: (noResult, object) async {
+            map['category_id'] = object;
+            return object;
+          },
+        );
       }
     }
     await batch.commit();
@@ -2263,434 +1713,6 @@ class _$ItemHelper {
     final noids = itemList.where((e) => e.id == 0);
     if (noids.isNotEmpty) {
       throw ArgumentError('Cannot delete Item because id is 0.');
-    }
-    final ids = itemList.map((e) => e.id).toSet().toList();
-
-    batch.delete(
-      tableName,
-      where: '${column.id} in (${List.filled(ids.length, '?').join(',')})',
-      whereArgs: ids,
-    );
-  }
-}
-
-class _$OrderToItemHelper {
-  final String tableName = '"order_to_item"';
-  final column = (
-    id: '"id"',
-    order: '"order_id"',
-    field: '"field"',
-    item: '"item_id"',
-  );
-  final columnTypes = {
-    'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
-    'order_id': 'INTEGER REFERENCES "order"("id")',
-    'field': 'TEXT NOT NULL DEFAULT \'\'',
-    'item_id': 'INTEGER REFERENCES "item"("id")',
-  };
-  final columnList = ['id', 'order_id', 'field', 'item_id'];
-
-  _$AppDatabase appdb;
-
-  _$OrderToItemHelper(this.appdb);
-
-  static final v1ColumnList = ['id', 'order_id', 'field', 'item_id'];
-  final columnListByVersion = {1: v1ColumnList};
-
-  /// on create database table
-  Future<void> onCreate(
-    int version, {
-    DatabaseExecutor? db,
-    Batch? batch,
-  }) async {
-    assert((db != null) ^ (batch != null));
-
-    var columnList = [];
-    for (var i = 1; i <= version; i++) {
-      final oneColumnList = columnListByVersion[i] ?? [];
-      columnList.addAll(oneColumnList);
-    }
-    if (columnList.isEmpty) {
-      throw UnsupportedError(
-        "No columns defined for OrderToItem version $version",
-      );
-    }
-    var params = [];
-    for (final column in columnList) {
-      params.add('"$column" ${columnTypes[column]}');
-    }
-    final sql = 'CREATE TABLE IF NOT EXISTS $tableName (${params.join(', ')})';
-    //print('Creating table: $sql');
-    if (db != null) {
-      await db.execute(sql);
-    } else if (batch != null) {
-      batch.execute(sql);
-    }
-  }
-
-  /// on upgrade database table
-  Future<void> onUpgrade(
-    int oldVersion,
-    int newVersion, {
-    DatabaseExecutor? db,
-    Batch? batch,
-  }) async {
-    var columnList = [];
-    for (var i = 1; i <= oldVersion; i++) {
-      final oneColumnList = columnListByVersion[i] ?? [];
-      columnList.addAll(oneColumnList);
-    }
-    if (columnList.isEmpty) {
-      await onCreate(newVersion, db: db, batch: batch);
-      return;
-    }
-
-    columnList = [];
-    for (var i = oldVersion + 1; i <= newVersion; i++) {
-      final newColumnList = columnListByVersion[i] ?? [];
-      columnList.addAll(newColumnList);
-    }
-    for (final column in columnList) {
-      final sql =
-          'ALTER TABLE $tableName ADD COLUMN "$column" ${columnTypes[column]}';
-      //print('Altering table: $sql');
-      if (db != null) {
-        await db.execute(sql);
-      } else if (batch != null) {
-        batch.execute(sql);
-      }
-    }
-  }
-
-  static Map<String, Object?> toSqlMap(OrderToItem item) {
-    final values = <String, Object?>{};
-
-    if (item.id != 0) {
-      values['id'] = item.id;
-    }
-
-    if (item.order != null) {
-      final orderId = item.order!.id;
-      if (orderId != 0) {
-        values['order_id'] = orderId;
-      } else {
-        throw StateError('OrderToItem.order.id is 0.');
-      }
-    }
-
-    values['field'] = item.field;
-
-    if (item.item != null) {
-      final itemId = item.item!.id;
-      if (itemId != 0) {
-        values['item_id'] = itemId;
-      } else {
-        throw StateError('OrderToItem.item.id is 0.');
-      }
-    }
-
-    return values;
-  }
-
-  static String _unquote(String s) {
-    if (s.startsWith('"') && s.endsWith('"')) {
-      return s.substring(1, s.length - 1);
-    }
-    return s;
-  }
-
-  /// unquote column names in map for fromSqlMap
-  static Map<String, Object?> _unquoteMap(Map<String, Object?> map) {
-    final newMap = <String, Object?>{};
-    for (final entry in map.entries) {
-      var key = _unquote(entry.key);
-      newMap[key] = entry.value;
-    }
-    return newMap;
-  }
-
-  static OrderToItem fromSqlMap(Map<String, Object?> map) {
-    map = _unquoteMap(map);
-    final keys = map.keys.toSet();
-    if (!keys.contains('field')) {
-      throw ArgumentError("Missing required key field in map");
-    }
-
-    var id = 0;
-    if (keys.contains('id')) {
-      id = map['id'] as int;
-      keys.remove('id');
-    }
-
-    Order? order;
-    if (keys.contains('order_id')) {
-      order = map['order_id'] as Order?;
-      keys.remove('order_id');
-    }
-
-    final field = map['field'] as String;
-    keys.remove('field');
-
-    Item? item;
-    if (keys.contains('item_id')) {
-      item = map['item_id'] as Item?;
-      keys.remove('item_id');
-    }
-
-    if (keys.isNotEmpty) {
-      throw ArgumentError('Unkown map keys. $keys');
-    }
-
-    final $item = OrderToItem(id: id, order: order, field: field, item: item);
-
-    return $item;
-  }
-
-  Future<int> register(OrderToItem item, _$AppDatabaseExecutor db) async {
-    final map = item.toSqlMap();
-    var command = 'REPLACE INTO';
-    final originalId = item.id;
-    if (originalId == 0) {
-      command = 'INSERT INTO';
-    }
-    final keys = map.keys.map((e) => '"$e"').toList();
-    final sql =
-        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
-    // print('register sql: $sql');
-    // print('args: ${map.values.toList()}');
-    final id = await db.rawInsert(sql, map.values.toList());
-    // set id if possible
-    item.id = id;
-
-    return id;
-  }
-
-  void registerBatch(OrderToItem item, _$AppDatabaseBatchWrapper batch) {
-    final map = item.toSqlMap();
-    var command = 'REPLACE INTO';
-    final originalId = item.id;
-    if (originalId == 0) {
-      command = 'INSERT INTO';
-    }
-    final keys = map.keys.map((e) => '"$e"').toList();
-    final sql =
-        '$command $tableName (${keys.join(',')}) VALUES (${List.filled(map.length, '?').join(', ')})';
-    // print('register sql: $sql');
-    // print('args: ${map.values.toList()}');
-    batch.rawInsert(sql, map.values.toList(), (noResult, object) async {
-      if (item.id == 0) {
-        if (noResult == true || object is! int) {
-          throw StateError('returned object $object is not int.');
-        }
-        // set id if possible
-        item.id = object;
-      }
-      return object;
-    });
-  }
-
-  Future<List<Map<String, Object?>>> convertReferences(
-    List<Map<String, Object?>> mapList,
-    _$AppDatabaseExecutor db,
-    List<({String table, String column})> dropKeys,
-  ) async {
-    var result = mapList;
-    result = result.toList(); // convert to modifiable list
-    final batch = db.batch();
-
-    for (var i = 0; i < result.length; i++) {
-      var map = result[i];
-      map = Map.from(map); // convert to modifiable map
-      result[i] = map;
-
-      // ignore: unused_local_variable
-      final id = map['id'] as int;
-      //print('OrderToItem($id) ${dropKeys.map((e) => '${_unquote(e.table)}.${_unquote(e.column)}').join(', ')}');
-      for (final key in dropKeys) {
-        if (_unquote(key.table) == 'order_to_item') {
-          map.remove(_unquote(key.column));
-        }
-      }
-      final orderId = map['order_id'] as int?;
-      if (orderId != null) {
-        batch.getOrder(
-          orderId,
-          dropKeys: dropKeys,
-          onCommit: (noResult, object) async {
-            map['order_id'] = object;
-            return object;
-          },
-        );
-      }
-      final itemId = map['item_id'] as int?;
-      if (itemId != null) {
-        batch.getItem(
-          itemId,
-          dropKeys: dropKeys,
-          onCommit: (noResult, object) async {
-            map['item_id'] = object;
-            return object;
-          },
-        );
-      }
-    }
-    await batch.commit();
-
-    return result;
-  }
-
-  /// convert map list from sql query to object list
-  List<OrderToItem> mapToObject(List<Map<String, Object?>> mapList) {
-    final result = mapList.map((map) => OrderToItem.fromSqlMap(map)).toList();
-    return result;
-  }
-
-  Future<List<OrderToItem>> query(
-    _$AppDatabaseExecutor db, {
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    List<({String table, String column})> dropKeys = const [],
-  }) async {
-    var queryResult = await db.query(
-      tableName,
-      where: where,
-      whereArgs: whereArgs,
-      orderBy: orderBy,
-      limit: limit,
-      offset: offset,
-    );
-    queryResult = await convertReferences(queryResult, db, dropKeys);
-
-    final result = mapToObject(queryResult);
-    return result;
-  }
-
-  void queryBatch(
-    _$AppDatabaseBatchWrapper batch, {
-    String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    List<({String table, String column})> dropKeys = const [],
-  }) {
-    batch.query(
-      tableName,
-      where: where,
-      whereArgs: whereArgs,
-      orderBy: orderBy,
-      limit: limit,
-      offset: offset,
-      onCommit: (noResult, object) async {
-        if (noResult == true || object is! List<Map<String, Object?>>) {
-          throw StateError('returned object $object is not expected type.');
-        }
-        var queryResult = await convertReferences(
-          object,
-          batch.executor,
-          dropKeys,
-        );
-
-        final result = mapToObject(queryResult);
-        return result;
-      },
-    );
-  }
-
-  Future<OrderToItem?> get(
-    int id,
-    _$AppDatabaseExecutor db, [
-    List<({String table, String column})> dropKeys = const [],
-  ]) async {
-    final result = await query(
-      db,
-      where: '${column.id} = ?',
-      whereArgs: [id],
-      dropKeys: dropKeys,
-    );
-
-    if (result.isEmpty) {
-      return null;
-    }
-
-    assert(result.length == 1);
-    return result[0];
-  }
-
-  void getBatch(
-    int id,
-    _$AppDatabaseBatchWrapper batch, [
-    List<({String table, String column})> dropKeys = const [],
-  ]) {
-    batch.query(
-      tableName,
-      where: '${column.id} = ?',
-      whereArgs: [id],
-      onCommit: (noResult, object) async {
-        if (noResult == true || object is! List<Map<String, Object?>>) {
-          throw StateError('returned object $object is not expected type.');
-        }
-
-        if (object.isEmpty) {
-          return null;
-        }
-
-        final queryResult = await convertReferences(
-          object,
-          batch.executor,
-          dropKeys,
-        );
-        final result = mapToObject(queryResult);
-        assert(result.length == 1);
-        return result[0];
-      },
-    );
-  }
-
-  Future<int> delete(
-    _$AppDatabaseExecutor db, {
-    String? where,
-    List<Object?>? whereArgs,
-  }) async {
-    return db.delete(tableName, where: where, whereArgs: whereArgs);
-  }
-
-  Future<void> deleteBatch(
-    _$AppDatabaseBatchWrapper batch, {
-    String? where,
-    List<Object?>? whereArgs,
-  }) async {
-    batch.delete(tableName, where: where, whereArgs: whereArgs);
-  }
-
-  Future<int> deleteByIds(
-    _$AppDatabaseExecutor db,
-    List<OrderToItem> itemList,
-  ) async {
-    final noids = itemList.where((e) => e.id == 0);
-    if (noids.isNotEmpty) {
-      throw ArgumentError('Cannot delete OrderToItem because id is 0.');
-    }
-    final ids = itemList.map((e) => e.id).toSet().toList();
-
-    final count = await db.delete(
-      tableName,
-      where: '${column.id} in (${List.filled(ids.length, '?').join(',')})',
-      whereArgs: ids,
-    );
-    return count;
-  }
-
-  void deleteByIdsBatch(
-    _$AppDatabaseBatchWrapper batch,
-    List<OrderToItem> itemList,
-  ) {
-    final noids = itemList.where((e) => e.id == 0);
-    if (noids.isNotEmpty) {
-      throw ArgumentError('Cannot delete OrderToItem because id is 0.');
     }
     final ids = itemList.map((e) => e.id).toSet().toList();
 

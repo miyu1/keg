@@ -10,6 +10,7 @@ import 'package:keg_annotation/keg_annotation.dart';
 class TableGenerator extends GeneratorForAnnotation<Table> {
   String className = '';
   String tableName = '';
+  bool isFreezed = false;
   Map<String, _FieldInfo> _fieldMap = {};
   final List<String> _requiredPositional = [];
   final List<String> _optionalPositional = [];
@@ -40,6 +41,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     className = element.displayName;
     tableName = toSnakeCase(className);
+    isFreezed = _annotatedWith(element, 'Freezed', package: 'package:freezed_annotation');
 
     await _getSchemaVersion(className, buildStep);
     if (schemaVersion == 0) {
@@ -612,11 +614,13 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     }
 
     final registerCommand = 'rawInsert(sql, map.values.toList(),';
+    final idField = _fieldMap['id']!;
     lines.addAll([
       'Future<int> register($className item , _\$${appDbName}Executor db) async {',
       ...registerCommon,
       'final id = await db.$registerCommand);',
-      'item.id = id;',
+      '  // set id if possible',
+      if (!idField.isFinal)  '  item.id = id;',
       '',
       if (registerCommon2.isNotEmpty) 'final executor = db;',
       ...registerCommon2,
@@ -628,19 +632,14 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       ...registerCommon,
       '  batch.$registerCommand (noResult, object) async {',
       if (registerCommon2.isNotEmpty) '    final executor = batch.executor;',
-      //'    int id = item.id;',
       '    if (item.id == 0) {',
-      //'      if (noResult != true && object is int) {',
-      //'        id = object;',
-      //'      }',
       '      if (noResult == true || object is! int) {',
       "        throw StateError('returned object \$object is not int.');",
       '     }',
-      '      item.id = object;',
-      //'      id = object;',
+      '     // set id if possible',
+      if (!idField.isFinal)  '      item.id = object;',
       '    }',
       ...registerCommon2,
-      //'    item.id = id;',
       '    return object;',
       '  });',
       '}',
@@ -794,9 +793,15 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         var dropKeys = <String>[];
         if (field.type == .dtBackLinkMany) {
           final backLink = field.annotationObject as BackLink;
-          dropKeys.add("(table: appdb.$varName.tableName, column: '${toSnakeCase(backLink.to)}')");
+          dropKeys.add(
+            "(table: appdb.$varName.tableName, column: '${toSnakeCase(backLink.to)}')",
+          );
         } else if (field.type == .dtManyReference) {
-          dropKeys.addAll(field.dropList.map((e) => "(table: appdb.$varName.tableName, column:'$e')",));
+          dropKeys.addAll(
+            field.dropList.map(
+              (e) => "(table: appdb.$varName.tableName, column:'$e')",
+            ),
+          );
         }
         for (final otherField in _fieldMap.values) {
           if (otherField.name == field.name) {
@@ -805,16 +810,22 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
           if (otherField.className == field.className) {
             if (otherField.type == .dtBackLinkMany) {
               final backLink2 = otherField.annotationObject as BackLink;
-              dropKeys.add("(table: appdb.$varName.tableName, column:'${toSnakeCase(backLink2.to)}')");
+              dropKeys.add(
+                "(table: appdb.$varName.tableName, column:'${toSnakeCase(backLink2.to)}')",
+              );
             } else if (otherField.type == .dtManyReference) {
-              dropKeys.addAll(otherField.dropList.map((e) => "(table: appdb.$varName.tableName, column:'$e')",));
+              dropKeys.addAll(
+                otherField.dropList.map(
+                  (e) => "(table: appdb.$varName.tableName, column:'$e')",
+                ),
+              );
             }
           }
         }
         lines.addAll([
           //"if (!dropKeys.contains('${field.columnName}')) {",
           "if (dropKeys.where((e) => _unquote(e.table) == '$tableName' && e.column == '${field.columnName}').isEmpty) {"
-          'batch.rawQuery(',
+              'batch.rawQuery(',
           '${field.name}Sql,',
           '[id],',
           '(noResult, object) async {',
@@ -869,11 +880,21 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       for (final field in _fieldMap.values) {
         if (field.type == .dtBackLink) {
           final backLink = field.annotationObject as BackLink;
-          lines.addAll([
-            'for (final item in object.${field.name}) {',
-            'item.${backLink.to} = object;',
-            '}',
-          ]);
+          if (isFreezed) {
+            lines.addAll([
+              'for (var i = 0; i < object.${field.name}.length; i++) {',
+              'final item = object.${field.name}[i];',
+              'final item2 = item.copyWith(${backLink.to}: object);',
+              'object.${field.name}[i] = item2;',
+              '}',
+            ]);
+          } else {
+            lines.addAll([
+              'for (final item in object.${field.name}) {',
+              'item.${backLink.to} = object;',
+              '}',
+            ]);
+          }
         }
       }
       lines.add('}'); // end for
@@ -1097,6 +1118,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       final fieldInfo = _FieldInfo();
       fieldInfo.name = field.displayName;
       fieldInfo.columnName = toSnakeCase(fieldInfo.name);
+      fieldInfo.isFinal = field.isFinal;
 
       var type = _DataType.dtUnknown;
       var typeName = field.type.getDisplayString();
@@ -1471,7 +1493,11 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
   }
 
   Object? annotationObject;
-  bool _annotatedWith(Element? field, String name) {
+  bool _annotatedWith(
+    Element? field,
+    String name, {
+    String package = 'package:keg_annotation',
+  }) {
     bool found = false;
 
     if (field == null) {
@@ -1500,7 +1526,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       //      if (annoElem.displayName.toLowerCase() == name.toLowerCase() &&
       //          library.identifier.startsWith('package:keg_annotation')) {
       if (typeName == name &&
-          library.identifier.startsWith('package:keg_annotation')) {
+          library.identifier.startsWith(package)) {
         found = true;
         annotationObject = null;
         //        if (annoElem.displayName == 'BackLink' ||
@@ -1604,6 +1630,7 @@ class _FieldInfo {
   _DataType type = .dtUnknown;
   String className = ''; // for enum and ref
   String defaultValue = '';
+  bool isFinal = false;
   ConstructType constructType = .notIncluded;
   bool isIndexed = false;
 

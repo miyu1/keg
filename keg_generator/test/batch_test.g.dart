@@ -887,6 +887,7 @@ class _$UserHelper {
     // print('register sql: $sql');
     // print('args: ${map.values.toList()}');
     final id = await db.rawInsert(sql, map.values.toList());
+    // set id if possible
     item.id = id;
 
     return id;
@@ -909,6 +910,7 @@ class _$UserHelper {
         if (noResult == true || object is! int) {
           throw StateError('returned object $object is not int.');
         }
+        // set id if possible
         item.id = object;
       }
       return object;
