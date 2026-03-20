@@ -132,6 +132,6 @@ class Index {
   /// If true, descendant order, else ascendant
   final bool descendant;
 
-  const Index({required this.unique, this.descendant = false});
+  const Index({this.unique = false, this.descendant = false});
 }
 

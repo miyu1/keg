@@ -8,3 +8,4 @@ publish_to: none
 workspace:
   - keg_annotation
   - keg_generator
+  - example
