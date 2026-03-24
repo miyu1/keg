@@ -1,6 +1,6 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:keg_annotation/keg_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sqflite/sqflite.dart';
 
 part 'localdb.g.dart';
 
@@ -10,7 +10,7 @@ class User {
   @unique
   String name;
 
-  @BackLink(to: 'user')
+  @BackLink(to: 'user', order: 'created', descendant: true)
   List<Order> orderList = [];
 
   User(this.name, {this.id = 0});
@@ -217,4 +217,17 @@ Future<List<User>> userList(Ref ref) async {
   return await appdb.queryUser(
     orderBy: appdb.userHelper.column.name
   );
+}
+
+@riverpod
+Future<User> user(Ref ref, String name) async {
+  final appdb = await ref.watch(appDatabaseProvider.future);
+  final result = await appdb.queryUser(
+    where: '${appdb.userHelper.column.name} = ?',
+    whereArgs: [name]
+  );
+  if (result.isEmpty) {
+    throw Exception('User not found');
+  }
+  return result.first;
 }

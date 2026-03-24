@@ -1640,7 +1640,7 @@ class _$UserHelper {
       batch.queryOrder(
         where: '${appdb.orderHelper.column.user} = ?',
         whereArgs: [id],
-        orderBy: '${appdb.orderHelper.column.id} ASC',
+        orderBy: '${appdb.orderHelper.column.created} DESC',
         dropKeys: [
           (
             table: appdb.orderHelper.tableName,
@@ -3871,7 +3871,7 @@ final class AppDatabaseProvider
   }
 }
 
-String _$appDatabaseHash() => r'3ac0eebd8fc912d0e0e119cfb846a339612fcae8';
+String _$appDatabaseHash() => r'6000ccdd1ef25f5f61781247b1ed5e5b834562e5';
 
 @ProviderFor(categoryList)
 final categoryListProvider = CategoryListProvider._();
@@ -3949,3 +3949,71 @@ final class UserListProvider
 }
 
 String _$userListHash() => r'ec9698881455f44f690128a1e35ba1f2851ada84';
+
+@ProviderFor(user)
+final userProvider = UserFamily._();
+
+final class UserProvider
+    extends $FunctionalProvider<AsyncValue<User>, User, FutureOr<User>>
+    with $FutureModifier<User>, $FutureProvider<User> {
+  UserProvider._({
+    required UserFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'userProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$userHash();
+
+  @override
+  String toString() {
+    return r'userProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<User> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<User> create(Ref ref) {
+    final argument = this.argument as String;
+    return user(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is UserProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$userHash() => r'862c5b3ca8617684e94a5a0903b50f9112ab3519';
+
+final class UserFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<User>, String> {
+  UserFamily._()
+    : super(
+        retry: null,
+        name: r'userProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  UserProvider call(String name) => UserProvider._(argument: name, from: this);
+
+  @override
+  String toString() => r'userProvider';
+}
