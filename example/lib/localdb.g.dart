@@ -1034,6 +1034,19 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
     );
   }
 
+  Future<void> openInMemory() async {
+    database = await openDatabase(
+      inMemoryDatabasePath,
+      //':memory:',
+      version: schemaVersion,
+      onConfigure: onConfigure,
+      onCreate: onCreate,
+      onUpgrade: onUpgrade,
+      onDowngrade: onDowngrade,
+      onOpen: onOpen,
+    );
+  }
+
   Future<void> onConfigure(Database db) async {
     // do nothing
   }

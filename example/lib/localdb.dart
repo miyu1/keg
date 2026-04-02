@@ -188,12 +188,12 @@ Future<void> setInitialContents(AppDatabase appdb) async {
 @riverpod
 Future<AppDatabase> appDatabase(Ref ref) async {
   final db = AppDatabase();
-  print('Opening database...');
+  //print('Opening database...');
   await db.open();
-  print('Database path: ${db.path}');
+  //print('Database path: ${db.path}');
 
   ref.onDispose(() async {
-    print('Closing database...');
+    //print('Closing database...');
     if (ref.mounted) {
       await db.close();
     }

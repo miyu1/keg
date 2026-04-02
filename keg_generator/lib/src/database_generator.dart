@@ -160,13 +160,21 @@ class DatabaseGenerator extends GeneratorForAnnotation<KegDatabase> {
     }
     buffer.writeln('');
 
+    // open
     buffer.writeln('  Future<String> getPathToOpen();');
     buffer.writeln('');
     buffer.writeln('  Future<void> open() async {');
     buffer.writeln('    final path = await getPathToOpen();');
-    buffer.writeln(
-      '    database = await openDatabase(path, version: schemaVersion,',
-    );
+    buffer.writeln('    database = await openDatabase(path,');
+    buffer.writeln('      version: schemaVersion,');
+    buffer.writeln('      onConfigure: onConfigure,');
+    buffer.writeln('      onCreate: onCreate, onUpgrade: onUpgrade,');
+    buffer.writeln('      onDowngrade: onDowngrade, onOpen: onOpen);');
+    buffer.writeln('  }');
+    buffer.writeln('');
+    buffer.writeln('  Future<void> openInMemory() async {');
+    buffer.writeln("    database = await openDatabase(':memory:',");
+    buffer.writeln('      version: schemaVersion,');
     buffer.writeln('      onConfigure: onConfigure,');
     buffer.writeln('      onCreate: onCreate, onUpgrade: onUpgrade,');
     buffer.writeln('      onDowngrade: onDowngrade, onOpen: onOpen);');
