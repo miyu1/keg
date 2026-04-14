@@ -5,17 +5,15 @@ This is flutter example project using keg_generator
 This is simplified shopping app made of three screen.
 <table>
   <tr>
-    <td style="text-align: center;">caption1</td>
-    <td style="text-align: center;">caption2</td>
+    <td align="center">caption1</td>
+    <td align="center">caption2</td>
   </tr>
   <tr>
     <td style="text-align: center;">
-      <span>図1: キャプション1</span> <br />
-      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション1"  />
+      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション1" />
     </td>
     <td style="text-align: center;">
-      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション2"  /><br>
-      <span>図2: キャプション2</span>
+      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/order.png" alt="キャプション2" />
     </td>
   </tr>
 </table>
