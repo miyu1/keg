@@ -3,7 +3,25 @@
 This is flutter example project using keg_generator
 
 This is simplified shopping app made of three screen.
-<table style="border:none;">
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 20px;">
+  <div style="text-align: center;">caption1</div>
+  <div>caption2</div>
+  <div>caption3</div>
+  <div>
+    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png"
+         alt="キャプション1" />
+  </div>
+  <div>
+    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/order.png"
+         alt="キャプション1"/>
+  </div>
+  <div>
+    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/history.png"
+          alt="キャプション1"/>
+  </div>
+</div>
+<!-- table style="border:none;">
+  no way to remove border in github page
   <tr>
     <td align="center" style="border: none;">caption1</td>
     <td align="center" style="border: none;">caption2</td>
@@ -23,7 +41,7 @@ This is simplified shopping app made of three screen.
            alt="キャプション2" width="200px" />
     </td>
   </tr>
-</table>
+</table -->
 <!-- div style="display:  inline-block;"-->
 <!-- div>
 <figure style="display:inline-block; text-align:center;">
@@ -39,6 +57,8 @@ This is simplified shopping app made of three screen.
   <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/history.png" alt="order history screen" width="200px">
 </figure>
 </div -->
+
+next content
 [Home Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/home.png "Home Screen") (href "caption")
 
 ## Getting Started
