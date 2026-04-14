@@ -6,11 +6,11 @@ This is simplified shopping app made of three screen.
 <div style="display: flex; justify-content: center; gap: 10px; text-align: center;">
   <div>
     <p>図1: キャプション1</p>
-    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション1" width="100%" />
+    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション1" width="200px" />
   </div>
   <div>
     <p>図2: キャプション2</p>
-    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション2" width="100%" />
+    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション2" width="200px" />
   </div>
 </div>
 <!-- div style="display:  inline-block;"-->
