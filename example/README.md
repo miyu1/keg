@@ -1,66 +1,42 @@
 # keg_generator example
 
-This is flutter example project using keg_generator
+This is flutter example project using keg_generator,
+which is simplified shopping app made of three screen.
 
-This is simplified shopping app made of three screen.
+|Home Screeen|Order Screen|Order History Screen|
+|:--------:|:--------:|:--------:|
+|![Home Screen](doc/images/home.png)|![Order Screen](doc/images/order.png)|![Order History Screen](doc/images/history.png)|
 
-|caption1|caption2|caption3|
-|--------|--------|--------|
-|![Home Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/home.png)|![Order Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/order.png)|![Order History Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/history.png)|
+On home screen, it is able to add, delete or select user.
 
+On order screen, it is able to select several items, and submit new order.
 
+Star rating is evaluated by number of orders of each item.
 
+On order history screen, it is able to view and delete previous orders.
 
-<!-- table style="border:none;">
-  no way to remove border in github page
-  <tr>
-    <td align="center" style="border: none;">caption1</td>
-    <td align="center" style="border: none;">caption2</td>
-    <td align="center" style="border: none;">caption3</td>
-  </tr>
-  <tr>
-    <td style="text-align: center; border: none;">
-      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png"
-           alt="キャプション1" width="200px" />
-    </td>
-    <td style="text-align: center; border: none;">
-      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/order.png"
-           alt="キャプション2" width="200px" />
-    </td>
-    <td style="text-align: center; border: none;">
-      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/history.png"
-           alt="キャプション2" width="200px" />
-    </td>
-  </tr>
-</table -->
-<!-- div style="display:  inline-block;"-->
-<!-- div>
-<figure style="display:inline-block; text-align:center;">
-  <figcaption >home screen</figcaption>
-  <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="home screen" width="200px">
-</figure>
-<figure style="display:inline-block; text-align:center;">
-  <figcaption >order screen</figcaption>
-  <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/order.png" alt="order screen" width="200px">
-</figure>
-<figure style="display:inline-block; text-align:center;">
-  <figcaption >order history screen</figcaption>
-  <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/history.png" alt="order history screen" width="200px">
-</figure>
-</div -->
+## Data Model
 
-next content
+Following is table classes defined in this example.
 
-## Getting Started
+```mermaid
+flowchart LR
+ User
+ Order
+ Item
+ Category
 
-This project is a starting point for a Flutter application.
+ Order --> User
+ Order -- (many to many) --> Item
+ Item --> Category
+```
 
-A few resources to get you started if this is your first Flutter project:
+Order and Item is many to many relationship.
+An Order may have several items which ordered,
+and item is refered by several orders.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Back links is also defined for all relationships,
+so from User all Orders of the user can be referred,
+and from Item number of Orders for each Item can be acquired.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+These are defined in [lodaldb.dart](lib/localdb.dart) file.
