@@ -10,7 +10,7 @@ This is simplified shopping app made of three screen.
       <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション1" width="45%" /><br>
     </td>
     <td style="text-align: center;">
-      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション2" width="45%" /><br>
+      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション2"  /><br>
       <span>図2: キャプション2</span>
     </td>
   </tr>
