@@ -3,16 +3,18 @@
 This is flutter example project using keg_generator
 
 This is simplified shopping app made of three screen.
-<div style="display: flex; justify-content: center; gap: 10px; text-align: center;">
-  <div>
-    <p>図1: キャプション1</p>
-    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション1" width="200px" />
-  </div>
-  <div>
-    <p>図2: キャプション2</p>
-    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション2" width="200px" />
-  </div>
-</div>
+<table>
+  <tr>
+    <td style="text-align: center;">
+      <span>図1: キャプション1</span> <br />
+      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション1" width="45%" /><br>
+    </td>
+    <td style="text-align: center;">
+      <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション2" width="45%" /><br>
+      <span>図2: キャプション2</span>
+    </td>
+  </tr>
+</table>
 <!-- div style="display:  inline-block;"-->
 <!-- div>
 <figure style="display:inline-block; text-align:center;">
