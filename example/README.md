@@ -1,6 +1,25 @@
-# example
+# keg_generator example
 
-A new Flutter project.
+This is flutter example project using keg_generator
+
+This is simplified shopping app made of three screen.
+<!-- div style="display:  inline-block;"-->
+<div>
+<figure style="display:inline-block; text-align:center;">
+  <figcaption >home screen</figcaption>
+  <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="home screen" width="200px">
+</figure>
+<figure style="display:inline-block; text-align:center;">
+  <figcaption >order screen</figcaption>
+  <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/order.png" alt="order screen" width="200px">
+</figure>
+<figure style="display:inline-block; text-align:center;">
+  <figcaption >order history screen</figcaption>
+  <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/history.png" alt="order history screen" width="200px">
+</figure>
+</div>
+<!-- img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" width="300px" display:table;--> 
+[Home Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/home.png "Home Screen") (href "caption")
 
 ## Getting Started
 
