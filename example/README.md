@@ -3,8 +3,18 @@
 This is flutter example project using keg_generator
 
 This is simplified shopping app made of three screen.
+<div style="display: flex; justify-content: center; gap: 10px; text-align: center;">
+  <div>
+    <p>図1: キャプション1</p>
+    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション1" width="100%" />
+  </div>
+  <div>
+    <p>図2: キャプション2</p>
+    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="キャプション2" width="100%" />
+  </div>
+</div>
 <!-- div style="display:  inline-block;"-->
-<div>
+<!-- div>
 <figure style="display:inline-block; text-align:center;">
   <figcaption >home screen</figcaption>
   <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" alt="home screen" width="200px">
@@ -17,8 +27,7 @@ This is simplified shopping app made of three screen.
   <figcaption >order history screen</figcaption>
   <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/history.png" alt="order history screen" width="200px">
 </figure>
-</div>
-<!-- img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png" width="300px" display:table;--> 
+</div -->
 [Home Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/home.png "Home Screen") (href "caption")
 
 ## Getting Started
