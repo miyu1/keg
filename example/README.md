@@ -3,23 +3,14 @@
 This is flutter example project using keg_generator
 
 This is simplified shopping app made of three screen.
-<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 20px;">
-  <div style="text-align: center;">caption1</div>
-  <div>caption2</div>
-  <div>caption3</div>
-  <div>
-    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/home.png"
-         alt="キャプション1" />
-  </div>
-  <div>
-    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/order.png"
-         alt="キャプション1"/>
-  </div>
-  <div>
-    <img src="https://github.com/miyu1/keg/raw/main/example/doc/images/history.png"
-          alt="キャプション1"/>
-  </div>
-</div>
+
+|caption1|caption2|caption3|
+|--------|--------|--------|
+|![Home Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/home.png)|![Order Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/order.png)|![Order History Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/history.png)|
+
+
+
+
 <!-- table style="border:none;">
   no way to remove border in github page
   <tr>
@@ -59,7 +50,6 @@ This is simplified shopping app made of three screen.
 </div -->
 
 next content
-[Home Screen](https://github.com/miyu1/keg/raw/main/example/doc/images/home.png "Home Screen") (href "caption")
 
 ## Getting Started
 
