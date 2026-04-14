@@ -5,8 +5,8 @@ This is flutter example project using keg_generator
 This is simplified shopping app made of three screen.
 <table>
   <tr>
-    <td>caption1</td>
-    <td>caption2</td>
+    <td style="text-align: center;">caption1</td>
+    <td style="text-align: center;">caption2</td>
   </tr>
   <tr>
     <td style="text-align: center;">
