@@ -51,7 +51,28 @@ class UserScreen extends ConsumerWidget {
     final columns = <Widget>[];
 
     for (final order in user.orderList) {
-      columns.add(Text('Order: ${order.created}'));
+      //columns.add(Text('Order: ${order.created}'));
+      final row = Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text('Order: ${order.created}'),
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: () async {
+              final appdb = await ref.watch(appDatabaseProvider.future);
+              await appdb.deleteOrderByIds([order]);
+              ref.invalidate(userProvider(name));
+              if (ref.context.mounted) { 
+                ScaffoldMessenger.of(ref.context).showSnackBar(
+                  SnackBar(content: Text('Order deleted')),
+                );
+              }
+            },
+          )
+        ],
+      );
+      columns.add(row);
+
       final items = order.itemList
           .map((item) => ListTile(title: Text(item.name)))
           .toList();

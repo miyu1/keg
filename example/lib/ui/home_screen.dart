@@ -93,6 +93,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             OrderRoute(user.name).go(context);
             //UserRoute(user.name).go(context);
           },
+          trailing: IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: () async {
+              final appdb = await ref.watch(appDatabaseProvider.future);
+              await appdb.transaction((txn) async {
+                final qUser = await txn.getUser(user.id);
+                if (qUser == null) return;
+                await txn.deleteOrderByIds(qUser.orderList);
+                await txn.deleteUserByIds([qUser]);
+                ref.invalidate(userListProvider);
+                ref.invalidate(userProvider(qUser.name));
+              });
+              if (context.mounted) { 
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('User ${user.name} deleted')),
+                );
+              }
+            },
+          ),
         );
       },
     );
