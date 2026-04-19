@@ -13,7 +13,7 @@ class User {
   @BackLink(to: 'user')
   List<Order> orderList = [];
 
-  User(this.name, {this.id = 0}); 
+  User(this.name, {this.id = 0});
   Map<String, Object?> toSqlMap() => _$UserHelper.toSqlMap(this);
   factory User.fromSqlMap(Map<String, Object?> map) =>
       _$UserHelper.fromSqlMap(map);
@@ -24,8 +24,7 @@ class Order {
   int id;
   User? user;
 
-  @ManyToMany(middle: OrderToItem, self: 'order', target: 'item',
-    order: 'name')
+  @ManyToMany(middle: OrderToItem, self: 'order', target: 'item', order: 'name')
   List<Item> itemList = [];
 
   Order({this.user, this.id = 0});
@@ -41,7 +40,7 @@ class Item {
   String name;
 
   @BackLink(to: 'itemList')
-  List <Order> orderList = [];
+  List<Order> orderList = [];
 
   Item(this.name, {this.id = 0});
 
@@ -57,7 +56,7 @@ class OrderToItem {
   Item? item;
   String field;
 
-  OrderToItem({ required this.field, this.order, this.item,this.id = 0});
+  OrderToItem({required this.field, this.order, this.item, this.id = 0});
 
   Map<String, Object?> toSqlMap() => _$OrderToItemHelper.toSqlMap(this);
   factory OrderToItem.fromSqlMap(Map<String, Object?> map) =>
@@ -79,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   }
 }
 
-void main() async{
+void main() async {
   databaseFactory = databaseFactoryFfi;
   final appdb = AppDatabase();
   await appdb.open();
@@ -89,7 +88,7 @@ void main() async{
   final jane = User('Jane');
 
   await appdb.registerUser(john);
-  await appdb.registerUser(jane); 
+  await appdb.registerUser(jane);
 
   // items
   final pen = Item('Pen');
@@ -97,7 +96,7 @@ void main() async{
   final tablet = Item('Tablet');
   final earPhone = Item('Ear Phone');
 
-  await appdb.transaction((txn) async{
+  await appdb.transaction((txn) async {
     await txn.registerItem(pen);
     await txn.registerItem(notebook);
     await txn.registerItem(tablet);
@@ -130,11 +129,11 @@ void main() async{
   }
 
   final result2 = await appdb.queryItem();
-  for(var item in result2) {
+  for (var item in result2) {
     print('Item: ${item.name} (id=${item.id})');
-    for(var order in item.orderList) {
+    for (var order in item.orderList) {
       print('  Order: (id=${order.id})');
-      if(order.user != null) {
+      if (order.user != null) {
         print('    User: ${order.user!.name} (id=${order.user!.id})');
       }
     }

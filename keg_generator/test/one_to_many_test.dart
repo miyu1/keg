@@ -129,6 +129,15 @@ void main() async {
     expect(item3?.category?.id, cat2.id);
     expect(item3?.category?.name, cat2.name);
 
+    final dropKey = (
+      table: appdb.itemHelper.tableName,
+      column: appdb.itemHelper.column.category,
+    );
+    final result = await appdb.queryItem(dropKeys: [dropKey]);
+    expect(result.length, 1);
+    final item4 = result[0];
+    expect(item4.category, isNull);
+
     await appdb.deleteItemByIds([item1]);
     await appdb.deleteCategoryByIds([cat, cat2]);
     //await appdb.deleteCategory(cat2);

@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 part 'sole_table_test.g.dart';
 
-@Table()
+@table
 class User {
   int id;
   String name;
@@ -23,7 +23,7 @@ enum Color {
   red, green, blue;
 }
 
-@Table()
+@table
 class ItemInfo {
   int id;
   String name;
@@ -145,15 +145,17 @@ void main() async {
   });
 
   test('insert/delete User', () async {
-    final user1 = User('John');
+    User user1 = User('John');
+    print(user1.id); // 0
     expect(user1.id, 0);
 
     final id = await appdb.registerUser(user1);
     print('id: $id');
     expect(id, greaterThan(0));
+    print(user1.id); // 1
     expect(user1.id, id);
 
-    final result = await appdb.queryUser();
+    List<User>result = await appdb.queryUser();
     expect(result.length, 1);
     final user2 = result[0];
     expect(user2.id, user1.id);

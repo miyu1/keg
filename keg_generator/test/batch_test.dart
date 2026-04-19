@@ -166,13 +166,45 @@ void main() async {
     // delete ends normally 2
     final result7 = await appdb.queryUser();
     final batch7 = appdb.batch();
-    for(final user in result7) {
-      batch7.deleteUserByIds([user]);
-    }
+    batch7.deleteUserByIds(result7);
     await batch7.commit(noResult: true);
     
     final result8 = await appdb.queryUser();
     expect(result8, isEmpty);
+  });
+
+  test('on commit callback', () async {
+    final user1 = User('Mike');
+
+    final batch1 = appdb.batch();
+    batch1.registerUser(user1, (noResult, object) async {
+      expect(noResult, null);
+      expect(object, isA<int>());
+      expect(user1.id, object);
+
+      return object;
+    });
+
+    batch1.queryUser(onCommit: (noResult, object) async {
+      expect(noResult, null);
+      expect(object, isA<List<User>>());
+      final list = object as List<User>;
+      expect(list.length, 1);
+      expect(list[0].name, user1.name);
+
+      return object;
+    });
+    await batch1.commit();
+
+    final batch2 = appdb.batch();
+    batch1.queryUser(onCommit: (noResult, object) async {
+      expect(noResult, true);
+
+      return object;
+    });
+    await batch2.commit(noResult: true);
+
+    await appdb.deleteUserByIds([user1]);
   });
 
 }

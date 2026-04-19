@@ -1,0 +1,1 @@
+This is dart code example to use keg_generator.
