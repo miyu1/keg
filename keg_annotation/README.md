@@ -1,3 +1,3 @@
 
-This is annotation package for keg_generator.
-Read keg_generator package for detail.
+This is annotation package for [keg_generator](https://pub.dev/packages/keg_generator).
+See keg_generator page for detail.
