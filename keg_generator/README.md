@@ -132,6 +132,22 @@ Full list of generated methods are described [here](#generated-codes-detail).
 
 ## Table of Contents
 - [Getting Started](#getting-started)
+- [Example](#example)
+- [Limitations](#limitations)
+- [Features](#features)
+  - [One to Many Relationship](#one-to-many-relationship)
+  - [Many to Many Relationship](#many-to-many-relationship)
+  - [Migration](#migration)
+  - [Transaction and Batch](#transaction-and-batch)
+  - [Index](#index)
+  - [Ignore Annotation](#ignore-annotation)
+  - [Use with json_serializable and freezed annotation](#use-with-json_serializable-and-freezed-annotation)
+- [Generated Codes Detail](#generated-codes-detail)  
+  - [_$AppDatabase](#_appdatabase)
+    - [_$AppDatabase Fields](#_appdatabase-fields)
+    - [_$AppDatabase CRUD methods](#_appdatabase-crud-methods)
+      - [register](#appdb-register)
+
 - [registerTable](#registerTable)
 
 ## Getting started
@@ -469,7 +485,7 @@ class ItemInfo {
 
 ### Transaction and Batch
 
-Transaction is supported as same as [sqflite].
+Transaction is supported as same as [sqflite].  
 **transaction_test.dart**
 ```dart
 final user1 = User('Mike');
@@ -481,7 +497,7 @@ await appdb.transaction((txn) async {
 });
 ```
 
-Batch is also same.
+Batch is also same.  
 **batch_test.dart**
 ```dart
 final batch1 = appdb.batch();
@@ -672,7 +688,7 @@ This class is generated per database class.
 
 `abstract class _$AppDatabase implements _$AppDatabaseExecutor`
 
-#### Fields
+#### _$*AppDatabase* Fields
 
 `late Database database`
 
@@ -684,10 +700,10 @@ Object of [sqflite Database class].
 
 Instance of table helper class.    
 
-#### CRUD methods
+#### _$*AppDatabase* CRUD methods
 For each table classes, following methods are defined.
 
-<a id="register"></a> `Future<int> registerTable(Table item)`
+<a id="appdb-register"></a> `Future<int> registerTable(Table item)`
 
 Insert or update record to SQLite table.  
 Always update every columns in record.  
