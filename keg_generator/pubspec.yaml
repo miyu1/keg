@@ -1,5 +1,10 @@
 name: keg_generator
 description: sql helper generator for simplified local database access.
+topics:
+  - codegen
+  - sql
+  - database
+
 version: 0.1.0
 repository: https://github.com/miyu1/keg/tree/main/keg_generator
 
@@ -29,9 +34,4 @@ dev_dependencies:
   freezed: ^3.2.5
   json_serializable: ^6.13.0
   json_annotation: ^4.11.0
-
-topics:
-  - code generation
-  - sql
-  - local database
   
