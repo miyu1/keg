@@ -145,10 +145,35 @@ Full list of generated methods are described [here](#generated-codes-detail).
 - [Generated Codes Detail](#generated-codes-detail)  
   - [_$AppDatabase](#_appdatabase)
     - [_$AppDatabase Fields](#_appdatabase-fields)
-    - [_$AppDatabase CRUD methods](#_appdatabase-crud-methods)
+    - [_$AppDatabase CRUD Methods](#_appdatabase-crud-methods)
       - [register](#appdb-register)
+      - [query](#appdb-query)
+      - [get](#appdb-get)
+      - [delete](#appdb-delete)
+      - [deleteByIds](#appdb-delete-by-id)
+    - [_$AppDatabase Database Methods](#_appdatabase-database-methods)  
+      - [schemaVersion](#appdb-schema-version)
+      - [getPathToOpen](#appdb-path-to-open)
+      - [open](#appdb-open)
+      - [openInMemory](#appdb-open-in-memory)
+      - [close](#appdb-close)
+      - [onConfigure](#appdb-on-configure)
+      - [onCreate](#appdb-on-create)
+      - [onUpgrade](#appdb-on-upgrade)
+      - [onDowngrade](#appdb-on-downgrade)
+      - [onOpen](#appdb-on-open) 
+    - [_$AppDatabase Other methods](#_appdatabase-other-methods)
+  - [_$TableHelper](#_tablehelper)
+    - [_$Table*Helper Fields](#_tablehelper-fields)
+    - [_$Table*Helper CRUD Methods](#_tablehelper-crud-methods)
+    - [_$Table*Helper Database Methods](#_tablehelper-database-methods)
+    - [_$Table*Helper Map Methods](#_tablehelper-map-methods)
+    - [_$Table*Helper Other Methods](#_tablehelper-other-methods)
+  - [_$AppDatabaseExecutor](#_appdatabaseexecutor)  
+  - [_$AppDatabaseTransactionWrapper](#_appdatabasetransactionwrapper)
+  - [_$AppDatabaseBatchWrapper](#_appdatabasebatchwrapper)
+- [Additional Information](#additional-information)
 
-- [registerTable](#registerTable)
 
 ## Getting started
 
@@ -703,7 +728,7 @@ Instance of table helper class.
 #### _$*AppDatabase* CRUD methods
 For each table classes, following methods are defined.
 
-<a id="appdb-register"></a> `Future<int> registerTable(Table item)`
+<a id="appdb-register"></a>`Future<int> registerTable(Table item)`
 
 Insert or update record to SQLite table.  
 Always update every columns in record.  
@@ -713,12 +738,16 @@ If id is not 0, REPLACE statement is used.
 If record with the id exists in the table, is updated.  
 If record with the id does not exist, is inserted.
 
-`Future<List<Table>> queryTable({String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    List<({String table, String column})> dropKeys = const [],})`
+<a id="appdb-query"></a>
+```
+Future<List<Table>> queryTable({
+  String? where,
+  List<Object?>? whereArgs,
+  String? orderBy,
+  int? limit,
+  int? offset,
+  List<({String table, String column})> dropKeys = const [],})
+```
 
 Query records from SQLite table and returns list of table class objects.  
 Most parameters are same as [sqflite query].
@@ -727,7 +756,7 @@ Most parameters are same as [sqflite query].
 If you have linked tables and do not need link information,
 you can improve performance of query.
 
-**one_to_many_test.dart**
+DropKeys example(**one_to_many_test.dart**) :
 ```dart
 final dropKey = (
   table: appdb.itemHelper.tableName,
@@ -737,69 +766,84 @@ final result = await appdb.queryItem(dropKeys: [dropKey]);
 ```
 If column specified in `dropKeys` is mandatory parameter of constructor, Exception occurs.
 
-`Future<Table?> getTable(int id, [
-    List<({String table, String column})> dropKeys = const [],])`
+<a id="appdb-get"></a>
+```
+Future<Table?> getTable(int id, [
+  List<({String table, String column})> dropKeys = const [],])
+```
 
 Acquire table class instance by id.  
 If not exist, returns null.
 
+<a id="appdb-delete"></a>
 `Future<int> deleteTable({String? where, List<Object?>? whereArgs})`
 
 Delete records from table.  
 Returns number of records deleted.
 
+<a id="appdb-delete-by-id"></a>
 `Future<int> deleteTableByIds(List<Table> itemsList)`
 
 Delete records by instance of table class.
 Returns number of records deleted.
 
-#### database methods
+#### _$*AppDatabase* Database Methods
 
+<a id="appdb-schema-version"></a>
 `int get schemaVersion`
 
 Acquire schema version specified in `@KegDatabase` annotation.
 
+<a id="appdb-path-to-open"></a>
 `Future<String> getPathToOpen()`
 
 Acquire path of SQLite file.  
 If you want to use default directory, return value can be relative path.
 
+<a id="appdb-open"></a>
 `Future<void> open()`
 
 Open or create SQLite file.
 
+<a id="appdb-open-in-memory"></a>
 `Future<void> openInMemory()`
 
 Open or create SQLite file in memory.
 
+<a id="appdb-close"></a>
 `Future<void> close()`
 
 Close SQLite file.
 
+<a id="appdb-on-configure"></a>
 `Future<void> onConfigure(Database db)`
 
 Call back function on configure database.
 Called on open.
 
+<a id="appdb-on-create"></a>
 `Future<void> onCreate(Database db, int version)`
 
 Call back function on create database.
 
+<a id="appdb-on-upgrade"></a>
 `Future<void> onUpgrade(Database db, int oldVersion, int newVersion)`
 
 Call back function on upgrade database.
 
+<a id="appdb-on-downgrade"></a>
 `Future<void> onDowngrade(Database db, int oldVersion, int newVersion)`
 
 Call back function on downgrade database.  
 keg_generator does not support downgrade, so UnimplementedError occurs
 if downgrade happens.
 
+<a id="appdb-on-open"></a>
 `Future<void> onOpen(Database db)`
 
 Call back function on open database.
 
-#### Other methods
+#### _$*AppDatabase* Other methods
 
 These are mainly pass through methods to [sqflite Database class].
 
@@ -901,7 +945,7 @@ Table helper class is generated per each table class.
 
 `class _$TableHelper`
 
-#### Fields
+#### _$*Table*Helper Fields
 
 `final String tableName`
 
@@ -959,7 +1003,7 @@ final columnListByVersion = {1: v1ColumnList, 2: v2ColumnList};
 
 Link to AppDatabase
 
-#### CRUD Methods
+#### _$*Table*Helper CRUD Methods
 
 `Future<int> register(Table item, _$AppDatabaseExecutor db)`
 
@@ -1021,7 +1065,7 @@ Actual implementation of AppDatabase delete*Table*ByIds.
 
 Actual implementation of AppDatabase delete*Table*ByIds on batch.
 
-#### Database Methods
+#### _$*Table*Helper Database Methods
 
 `Future<void> onCreate(int version, {
     DatabaseExecutor? db,
@@ -1036,7 +1080,7 @@ Call back function on create table.
 
 Call back function on upgrade table.
 
-#### Map Methods
+#### _$*Table*Helper Map Methods
 
 `static Map<String, Object?> toSqlMap(Table item)`
 
@@ -1046,7 +1090,7 @@ Convert table class instance to Map.
 
 Convert Map to table class instance.
 
-#### Other Methods 
+#### _$*Table*Helper Other Methods 
   
 `Future<List<Map<String, Object?>>> convertReferences(List<Map<String, Object?>> mapList,
     _$AppDatabaseExecutor db,
