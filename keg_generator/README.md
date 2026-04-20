@@ -769,7 +769,8 @@ If column specified in `dropKeys` is mandatory parameter of constructor, Excepti
 <a id="appdb-get"></a>
 ```
 Future<Table?> getTable(int id, [
-  List<({String table, String column})> dropKeys = const [],])
+  List<({String table, String column})> dropKeys = const [],
+])
 ```
 
 Acquire table class instance by id.  
@@ -852,7 +853,11 @@ These are mainly pass through methods to [sqflite Database class].
 
  Start transaction.
 
-`Future<T> readTransaction<T>(Future<T> Function(_$AppDatabaseTransactionWrapper txn) action,)`
+```
+Future<T> readTransaction<T>(
+  Future<T> Function(_$AppDatabaseTransactionWrapper txn) action,
+)
+```
 
 Start read transaction.
 
@@ -876,54 +881,80 @@ Execute SQLite statement.
 
 Insert.
 
-`Future<int> insert(String table,
-    Map<String, Object?> values, {
-    String? nullColumnHack,
-    ConflictAlgorithm? conflictAlgorithm,})`
+```
+Future<int> insert(
+  String table,
+  Map<String, Object?> values, {
+  String? nullColumnHack,
+  ConflictAlgorithm? conflictAlgorithm,
+})
+```
 
 Insert.
 
-`Future<List<Map<String, Object?>>> query(String table, {bool? distinct,
-    List<String>? columns,
-    String? where,
-    List<Object?>? whereArgs,
-    String? groupBy,
-    String? having,
-    String? orderBy,
-    int? limit,
-    int? offset,})`
+```
+Future<List<Map<String, Object?>>> query(
+  String table, {
+  bool? distinct,
+  List<String>? columns,
+  String? where,
+  List<Object?>? whereArgs,
+  String? groupBy,
+  String? having,
+  String? orderBy,
+  int? limit,
+  int? offset,
+})
+```
 
 Query records and return list of map.
 
-`Future<List<Map<String, Object?>>> rawQuery(String sql,
- [List<Object?>? arguments,])`
+```
+Future<List<Map<String, Object?>>> rawQuery(
+  String sql,
+  [List<Object?>? arguments,]
+)
+```
 
 Query records and return list of map.
 
-`Future<QueryCursor> queryCursor(String table, 
-    {bool? distinct,
-    List<String>? columns,
-    String? where,
-    List<Object?>? whereArgs,
-    String? groupBy,
-    String? having,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    int? bufferSize,})`
+```
+Future<QueryCursor> queryCursor(
+  String table, 
+  {bool? distinct,
+  List<String>? columns,
+  String? where,
+  List<Object?>? whereArgs,
+  String? groupBy,
+  String? having,
+  String? orderBy,
+  int? limit,
+  int? offset,
+  int? bufferSize,
+})
+```
 
 Query records and return list of map.
 
-`Future<QueryCursor> rawQueryCursor(String sql,
-    List<Object?>? arguments, {int? bufferSize, })`
+```
+Future<QueryCursor> rawQueryCursor(
+  String sql,
+  List<Object?>? arguments,
+  {int? bufferSize, }
+)
+```
 
 Query records and return list of map.
 
-`Future<int> update(String table,
-    Map<String, Object?> values, {
-    String? where,
-    List<Object?>? whereArgs,
-    ConflictAlgorithm? conflictAlgorithm,})`
+```
+Future<int> update(
+  String table,
+  Map<String, Object?> values, {
+  String? where,
+  List<Object?>? whereArgs,
+  ConflictAlgorithm? conflictAlgorithm,
+})
+```
 
 Update.
 
@@ -955,7 +986,7 @@ table name
 final String tableName = '"user"';
 ```
 
-`column`
+`final column`
 
 Dart record type which holds name of columns of SQLite table.
 
@@ -1013,47 +1044,70 @@ Actual implementation of AppDatabase register*Table*.
 
 Actual implementation of AppDatabase register*Table* on batch.
 
-`Future<List<Table>> query(_$AppDatabaseExecutor db,
- {String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    List<({String table, String column})> dropKeys = const [],})`
+```
+Future<List<Table>> query(
+  _$AppDatabaseExecutor db, {
+  String? where,
+  List<Object?>? whereArgs,
+  String? orderBy,
+  int? limit,
+  int? offset,
+  List<({String table, String column})> dropKeys = const [],
+})
+```
 
 Actual implementation of AppDatabase query*Table*.
 
-`void queryBatch(_$AppDatabaseBatchWrapper batch, 
-{String? where,
-    List<Object?>? whereArgs,
-    String? orderBy,
-    int? limit,
-    int? offset,
-    List<({String table, String column})> dropKeys = const [],})`
+```
+void queryBatch(
+  _$AppDatabaseBatchWrapper batch, {
+  String? where,
+  List<Object?>? whereArgs,
+  String? orderBy,
+  int? limit,
+  int? offset,
+  List<({String table, String column})> dropKeys = const [],
+})
+```
 
 Actual implementation of AppDatabase query*Table* on batch.
 
-`Future<Table?> get(int id,
-    _$AppDatabaseExecutor db, 
-    [List<({String table, String column})> dropKeys = const [],])`
+```
+Future<Table?> get(
+  int id,
+  _$AppDatabaseExecutor db, 
+  [List<({String table, String column})> dropKeys = const [],
+])
+```
 
 Actual implementation of AppDatabase get*Table*.
 
-`void getBatch(int id,
-    _$AppDatabaseBatchWrapper batch, 
-    [List<({String table, String column})> dropKeys = const [],])`
+```
+void getBatch(
+  int id,
+  _$AppDatabaseBatchWrapper batch, 
+  [List<({String table, String column})> dropKeys = const [],])
+```
 
 Actual implementation of AppDatabase get*Table* on batch.
 
-`Future<int> delete(_$AppDatabaseExecutor db, 
-{String? where,
-    List<Object?>? whereArgs,})`
+```
+Future<int> delete(
+  _$AppDatabaseExecutor db, 
+  {String? where,
+  List<Object?>? whereArgs,
+  })
+```
 
 Actual implementation of AppDatabase delete*Table*.
 
-`Future<void> deleteBatch(_$AppDatabaseBatchWrapper batch, 
-{String? where,
-    List<Object?>? whereArgs,})`
+```
+Future<void> deleteBatch(
+    _$AppDatabaseBatchWrapper batch, 
+    {String? where,
+    List<Object?>? whereArgs,
+})
+```
 
 Actual implementation of AppDatabase delete*Table* on batch.
 
@@ -1067,16 +1121,23 @@ Actual implementation of AppDatabase delete*Table*ByIds on batch.
 
 #### _$*Table*Helper Database Methods
 
-`Future<void> onCreate(int version, {
+```
+Future<void> onCreate(
+    int version, {
     DatabaseExecutor? db,
-    Batch? batch,})`
+    Batch? batch,})
+```
 
 Call back function on create table.
 
-`Future<void> onUpgrade(int oldVersion,
+```
+Future<void> onUpgrade(
+    int oldVersion,
     int newVersion, {
     DatabaseExecutor? db,
-    Batch? batch,})`
+    Batch? batch,
+})
+```
 
 Call back function on upgrade table.
 
@@ -1092,9 +1153,13 @@ Convert Map to table class instance.
 
 #### _$*Table*Helper Other Methods 
   
-`Future<List<Map<String, Object?>>> convertReferences(List<Map<String, Object?>> mapList,
+```
+Future<List<Map<String, Object?>>> convertReferences(
+    List<Map<String, Object?>> mapList,
     _$AppDatabaseExecutor db,
-    List<({String table, String column})> dropKeys,)`
+    List<({String table, String column})> dropKeys,
+)
+```
 
 Called from query method.   
 If this table is linked to other, additional query is executed here.  
@@ -1110,8 +1175,12 @@ Finally covert from Map to table class instance including linked tables.
 Called from register method if many to many relation exists.  
 Compare if list of ids are equal or not.
 
-`Future<void> registerManyToMany(Order item,
-    _$AppDatabaseExecutor executor,)`
+```
+Future<void> registerManyToMany(
+    Order item,
+    _$AppDatabaseExecutor executor,
+)
+```
 
 Called from register method if many to many relation exists.  
 Register records of in the middle table.
