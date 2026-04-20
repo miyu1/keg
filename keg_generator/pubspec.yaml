@@ -16,7 +16,7 @@ dependencies:
   source_gen: ^4.2.0
   # path: ^1.9.0
 
-  keg_annotation: 0.1.0
+  keg_annotation: ^0.1.0
 
 dev_dependencies:
   lints: 
