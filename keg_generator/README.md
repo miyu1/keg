@@ -728,6 +728,7 @@ Instance of table helper class.
 #### _$*AppDatabase* CRUD methods
 For each table classes, following methods are defined.
 
+##### registerTable
 <a id="appdb-register"></a>`Future<int> registerTable(Table item)`
 
 Insert or update record to SQLite table.  
@@ -738,15 +739,17 @@ If id is not 0, REPLACE statement is used.
 If record with the id exists in the table, is updated.  
 If record with the id does not exist, is inserted.
 
+##### queryTable
 <a id="appdb-query"></a>
-```
+```dart
 Future<List<Table>> queryTable({
-  String? where,
-  List<Object?>? whereArgs,
-  String? orderBy,
-  int? limit,
-  int? offset,
-  List<({String table, String column})> dropKeys = const [],})
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+    int? offset,
+    List<({String table, String column})> dropKeys = const [],
+})
 ```
 
 Query records from SQLite table and returns list of table class objects.  
@@ -766,22 +769,25 @@ final result = await appdb.queryItem(dropKeys: [dropKey]);
 ```
 If column specified in `dropKeys` is mandatory parameter of constructor, Exception occurs.
 
+##### getTable
 <a id="appdb-get"></a>
-```
+```dart
 Future<Table?> getTable(int id, [
-  List<({String table, String column})> dropKeys = const [],
+    List<({String table, String column})> dropKeys = const [],
 ])
 ```
 
 Acquire table class instance by id.  
 If not exist, returns null.
 
+##### deleteTable
 <a id="appdb-delete"></a>
 `Future<int> deleteTable({String? where, List<Object?>? whereArgs})`
 
 Delete records from table.  
 Returns number of records deleted.
 
+##### deleteTableByIds
 <a id="appdb-delete-by-id"></a>
 `Future<int> deleteTableByIds(List<Table> itemsList)`
 
@@ -790,48 +796,57 @@ Returns number of records deleted.
 
 #### _$*AppDatabase* Database Methods
 
+##### schemaVersion
 <a id="appdb-schema-version"></a>
 `int get schemaVersion`
 
 Acquire schema version specified in `@KegDatabase` annotation.
 
+##### getPathToOpen
 <a id="appdb-path-to-open"></a>
 `Future<String> getPathToOpen()`
 
 Acquire path of SQLite file.  
 If you want to use default directory, return value can be relative path.
 
+##### open
 <a id="appdb-open"></a>
 `Future<void> open()`
 
 Open or create SQLite file.
 
+##### openInMemory
 <a id="appdb-open-in-memory"></a>
 `Future<void> openInMemory()`
 
 Open or create SQLite file in memory.
 
+##### close
 <a id="appdb-close"></a>
 `Future<void> close()`
 
 Close SQLite file.
 
+##### onConfigure
 <a id="appdb-on-configure"></a>
 `Future<void> onConfigure(Database db)`
 
 Call back function on configure database.
 Called on open.
 
+##### onCreate
 <a id="appdb-on-create"></a>
 `Future<void> onCreate(Database db, int version)`
 
 Call back function on create database.
 
+##### onUpgrade
 <a id="appdb-on-upgrade"></a>
 `Future<void> onUpgrade(Database db, int oldVersion, int newVersion)`
 
 Call back function on upgrade database.
 
+##### onDowngrade
 <a id="appdb-on-downgrade"></a>
 `Future<void> onDowngrade(Database db, int oldVersion, int newVersion)`
 
@@ -839,6 +854,7 @@ Call back function on downgrade database.
 keg_generator does not support downgrade, so UnimplementedError occurs
 if downgrade happens.
 
+##### onOpen
 <a id="appdb-on-open"></a>
 `Future<void> onOpen(Database db)`
 
@@ -848,127 +864,147 @@ Call back function on open database.
 
 These are mainly pass through methods to [sqflite Database class].
 
-`Future<T> transaction<T>(Future<T> Function(_$AppDatabaseTransactionWrapper txn) action,
- {bool? exclusive,})`
+##### transaction
+```dart
+Future<T> transaction<T>(
+    Future<T> Function(_$AppDatabaseTransactionWrapper txn) action,
+    {bool? exclusive,}
+)
+```
 
  Start transaction.
 
-```
+##### readTransaction
+```dart
 Future<T> readTransaction<T>(
-  Future<T> Function(_$AppDatabaseTransactionWrapper txn) action,
+    Future<T> Function(_$AppDatabaseTransactionWrapper txn) action,
 )
 ```
 
 Start read transaction.
 
+##### batch
 `_$AppDatabaseBatchWrapper batch()`
 
 Start batch.
 
+##### path
 `String get path`
 
 Actual full path of SQLite file.
 
+##### isOpen
 `bool get isOpen`
 
 Database is open or not.
 
+##### execute
 `Future<void> execute(String sql, [List<Object?>? arguments])`
 
 Execute SQLite statement.
 
+##### rawInsert
 `Future<int> rawInsert(String sql, [List<Object?>? arguments])`
 
 Insert.
 
-```
+##### insert
+```dart
 Future<int> insert(
-  String table,
-  Map<String, Object?> values, {
-  String? nullColumnHack,
-  ConflictAlgorithm? conflictAlgorithm,
+    String table,
+    Map<String, Object?> values, {
+    String? nullColumnHack,
+    ConflictAlgorithm? conflictAlgorithm,
 })
 ```
 
 Insert.
 
-```
+##### query
+```dart
 Future<List<Map<String, Object?>>> query(
-  String table, {
-  bool? distinct,
-  List<String>? columns,
-  String? where,
-  List<Object?>? whereArgs,
-  String? groupBy,
-  String? having,
-  String? orderBy,
-  int? limit,
-  int? offset,
+    String table, {
+    bool? distinct,
+    List<String>? columns,
+    String? where,
+    List<Object?>? whereArgs,
+    String? groupBy,
+    String? having,
+    String? orderBy,
+    int? limit,
+    int? offset,
 })
 ```
 
 Query records and return list of map.
 
-```
+##### rawQuery
+```dart
 Future<List<Map<String, Object?>>> rawQuery(
-  String sql,
-  [List<Object?>? arguments,]
+    String sql,
+    [List<Object?>? arguments,]
 )
 ```
 
 Query records and return list of map.
 
-```
+##### queryCursor
+```dart
 Future<QueryCursor> queryCursor(
-  String table, 
-  {bool? distinct,
-  List<String>? columns,
-  String? where,
-  List<Object?>? whereArgs,
-  String? groupBy,
-  String? having,
-  String? orderBy,
-  int? limit,
-  int? offset,
-  int? bufferSize,
+    String table, {
+    bool? distinct,
+    List<String>? columns,
+    String? where,
+    List<Object?>? whereArgs,
+    String? groupBy,
+    String? having,
+    String? orderBy,
+    int? limit,
+    int? offset,
+    int? bufferSize,
 })
 ```
 
 Query records and return list of map.
 
-```
+##### rawQueryCursor
+```dart
 Future<QueryCursor> rawQueryCursor(
-  String sql,
-  List<Object?>? arguments,
-  {int? bufferSize, }
+    String sql,
+    List<Object?>? arguments,
+    {int? bufferSize, }
 )
 ```
 
 Query records and return list of map.
 
-```
+##### update
+```dart
 Future<int> update(
-  String table,
-  Map<String, Object?> values, {
-  String? where,
-  List<Object?>? whereArgs,
-  ConflictAlgorithm? conflictAlgorithm,
+    String table,
+    Map<String, Object?> values, {
+    String? where,
+    List<Object?>? whereArgs,
+    ConflictAlgorithm? conflictAlgorithm,
 })
 ```
 
 Update.
 
+##### rawUpdate
 `Future<int> rawUpdate(String sql, [List<Object?>? arguments])`
 
 Update.
 
+##### delete
 `Future<int> delete(String table, {String? where, List<Object?>? whereArgs})`
 
-Delete
+Delete.
 
+##### rawDelete
 `Future<int> rawDelete(String sql, [List<Object?>? arguments])`
 
-Delete
+Delete.
 
 ### _$*Table*Helper
 
@@ -978,6 +1014,7 @@ Table helper class is generated per each table class.
 
 #### _$*Table*Helper Fields
 
+##### tableName
 `final String tableName`
 
 table name
@@ -986,6 +1023,7 @@ table name
 final String tableName = '"user"';
 ```
 
+##### column
 `final column`
 
 Dart record type which holds name of columns of SQLite table.
@@ -994,6 +1032,7 @@ Dart record type which holds name of columns of SQLite table.
 final column = (id: '"id"', name: '"name"');
 ```
 
+##### columnTypes
 `final Map<String, String> columnTypes`
 
 Column data types.  
@@ -1006,6 +1045,7 @@ final columnTypes = {
 };
 ```
 
+##### columnList
 `final List<String> columnList`
 
 List of column names.
@@ -1014,94 +1054,105 @@ List of column names.
 final columnList = ['id', 'name'];
 ```
 
+##### v*n*ColumnList
 `static final List<String> v1ColumnList`
 
 List of column names by each version.(v1ColumnList, v2ColumnList...) 
 
-```
+```dart
 static final v1ColumnList = ['id', 'name'];
 ```
 
+##### columnListByVersion
 `final Map<int, List<String>> columnListByVersion`
 
 Map of column list by each version
 
-```
+```dart
 final columnListByVersion = {1: v1ColumnList, 2: v2ColumnList};
 ```
 
+##### appdb
 `_$AppDatabase appdb;`
 
 Link to AppDatabase
 
 #### _$*Table*Helper CRUD Methods
-
+##### register
 `Future<int> register(Table item, _$AppDatabaseExecutor db)`
 
 Actual implementation of AppDatabase register*Table*.
 
+##### registerBatch
 `void registerBatch(Table item, _$AppDatabaseBatchWrapper batch)`
 
 Actual implementation of AppDatabase register*Table* on batch.
 
-```
+##### query
+```dart
 Future<List<Table>> query(
-  _$AppDatabaseExecutor db, {
-  String? where,
-  List<Object?>? whereArgs,
-  String? orderBy,
-  int? limit,
-  int? offset,
-  List<({String table, String column})> dropKeys = const [],
+    _$AppDatabaseExecutor db, {
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+    int? offset,
+    List<({String table, String column})> dropKeys = const [],
 })
 ```
 
 Actual implementation of AppDatabase query*Table*.
 
-```
+##### queryBatch
+```dart
 void queryBatch(
-  _$AppDatabaseBatchWrapper batch, {
-  String? where,
-  List<Object?>? whereArgs,
-  String? orderBy,
-  int? limit,
-  int? offset,
-  List<({String table, String column})> dropKeys = const [],
+    _$AppDatabaseBatchWrapper batch, {
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+    int? offset,
+    List<({String table, String column})> dropKeys = const [],
 })
 ```
 
 Actual implementation of AppDatabase query*Table* on batch.
 
-```
+##### get
+```dart
 Future<Table?> get(
-  int id,
-  _$AppDatabaseExecutor db, 
-  [List<({String table, String column})> dropKeys = const [],
+    int id,
+    _$AppDatabaseExecutor db, [
+    List<({String table, String column})> dropKeys = const [],
 ])
 ```
 
 Actual implementation of AppDatabase get*Table*.
 
-```
+##### getBatch
+```dart
 void getBatch(
-  int id,
-  _$AppDatabaseBatchWrapper batch, 
-  [List<({String table, String column})> dropKeys = const [],])
+    int id,
+    _$AppDatabaseBatchWrapper batch, [
+    List<({String table, String column})> dropKeys = const [],
+])
 ```
 
 Actual implementation of AppDatabase get*Table* on batch.
 
-```
+##### delete
+```dart
 Future<int> delete(
-  _$AppDatabaseExecutor db, 
-  {String? where,
-  List<Object?>? whereArgs,
-  })
+    _$AppDatabaseExecutor db, {
+    String? where,
+    List<Object?>? whereArgs,
+})
 ```
 
 Actual implementation of AppDatabase delete*Table*.
 
-```
+##### deleteBatch
+```dart
 Future<void> deleteBatch(
     _$AppDatabaseBatchWrapper batch, 
     {String? where,
@@ -1111,17 +1162,19 @@ Future<void> deleteBatch(
 
 Actual implementation of AppDatabase delete*Table* on batch.
 
+##### deleteByIds
 `Future<int> deleteByIds(_$AppDatabaseExecutor db, List<Table> itemList)`
 
 Actual implementation of AppDatabase delete*Table*ByIds.
 
+##### deleteByIdsBatch
 `void deleteByIdsBatch(_$AppDatabaseBatchWrapper batch, List<Table> itemList)`
 
 Actual implementation of AppDatabase delete*Table*ByIds on batch.
 
 #### _$*Table*Helper Database Methods
-
-```
+##### onCreate
+```dart
 Future<void> onCreate(
     int version, {
     DatabaseExecutor? db,
@@ -1130,7 +1183,8 @@ Future<void> onCreate(
 
 Call back function on create table.
 
-```
+##### onUpgrade
+```dart
 Future<void> onUpgrade(
     int oldVersion,
     int newVersion, {
@@ -1142,18 +1196,19 @@ Future<void> onUpgrade(
 Call back function on upgrade table.
 
 #### _$*Table*Helper Map Methods
-
+##### toSqlMap
 `static Map<String, Object?> toSqlMap(Table item)`
 
 Convert table class instance to Map.
 
+##### fromSqlMap
 `static Table fromSqlMap(Map<String, Object?> map)`
 
 Convert Map to table class instance.
 
 #### _$*Table*Helper Other Methods 
-  
-```
+##### convertReferences  
+```dart
 Future<List<Map<String, Object?>>> convertReferences(
     List<Map<String, Object?>> mapList,
     _$AppDatabaseExecutor db,
@@ -1165,17 +1220,20 @@ Called from query method.
 If this table is linked to other, additional query is executed here.  
 About `dropKeys` see query description in _$*AppDatabase*.
 
+##### mapToObject
 `List<User> mapToObject(List<Map<String, Object?>> mapList)`
 
 Called from query method.  
 Finally covert from Map to table class instance including linked tables.
 
+##### compareManyToMany
 `bool compareManyToMany(Table item1, Set<int> set2)`
 
 Called from register method if many to many relation exists.  
 Compare if list of ids are equal or not.
 
-```
+##### registerManyToMany
+```dart
 Future<void> registerManyToMany(
     Order item,
     _$AppDatabaseExecutor executor,
