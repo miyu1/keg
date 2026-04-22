@@ -38,14 +38,15 @@ jobs:
       - name: Analyze project source
         run: dart analyze
 
-      # Your project will need to have tests in test/ and a dependency on
-      # package:test for this step to succeed. Note that Flutter projects will
-      # want to change this to 'flutter test'.
       - name: Run keg_annotation tests
         run: dart test
         working-directory: ./keg_annotation
 
       - name: Run keg_generator tests
-        #run: dart test test/migration1_test.dart test/migration2_test.dart
-        run: dart test -j 1
+        run: dart test
+        working-directory: ./keg_generator
+
+      - name: Run keg_generator migration tests
+        # to avoid ffi core dump, we run the migration tests separately
+        run: dart test test/migration1.dart test/migration2.dart
         working-directory: ./keg_generator
