@@ -46,5 +46,5 @@ jobs:
         working-directory: ./keg_annotation
 
       - name: Run keg_generator tests
-        run: dart test
+        run: dart test --verbose
         working-directory: ./keg_generator
