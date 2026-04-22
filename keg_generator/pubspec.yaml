@@ -5,7 +5,7 @@ topics:
   - sql
   - database
 
-version: 0.1.0
+version: 0.1.1
 repository: https://github.com/miyu1/keg/tree/main/keg_generator
 
 resolution: workspace
