@@ -3,7 +3,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Dart
+name: Build and Test
 
 on:
   push:
@@ -46,6 +46,6 @@ jobs:
         working-directory: ./keg_annotation
 
       - name: Run keg_generator tests
-        run: dart test test/sole_table_test.dart test/one_to_many_test.dart
+        run: dart test test/migration1_test.dart
         #run: dart test
         working-directory: ./keg_generator
