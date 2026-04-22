@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:keg_annotation/keg_annotation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:test/test.dart';
@@ -33,9 +32,8 @@ void main() async {
     await appdb.close();
     
     final path = appdb.path;
-    print('file path: $path');
-    final f = File(path);
-    await f.delete();
+    print('deleting file: $path');
+    await databaseFactory.deleteDatabase(path);
   });
 
   test('check empty database', () async {

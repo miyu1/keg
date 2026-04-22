@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:keg_annotation/keg_annotation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:test/test.dart';
@@ -50,8 +48,7 @@ void main() async {
 
     final path = appdb.path;
     print('deleting file: $path');
-    final f = File(path);
-    await f.delete();
+    await databaseFactory.deleteDatabase(path);
   });
 
   test('throw error in transaction', () async {

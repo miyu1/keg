@@ -13,8 +13,7 @@ void main() {
     final dir = await getDatabasesPath();
     final path = p.join(dir, 'migration1.db');
     print('deleting file: $path');
-    final f = File(path);
-    await f.delete();
+    await databaseFactory.deleteDatabase(path);
   });
 
   test('before migration1', () async {

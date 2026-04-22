@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:keg_annotation/keg_annotation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -115,8 +113,7 @@ void main() async {
 
     final path = appdb.path;
     print('deleting file: $path');
-    final f = File(path);
-    await f.delete();
+    await databaseFactory.deleteDatabase(path);
   });
 
   test('freezed test', () async {

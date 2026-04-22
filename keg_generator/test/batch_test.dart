@@ -1,5 +1,4 @@
-import 'dart:io';
-import 'dart:async';
+//import 'dart:async';
 
 import 'package:keg_annotation/keg_annotation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -48,11 +47,10 @@ void main() async {
     if (appdb.isOpen) {
       await appdb.close();
     }
-
     final path = appdb.path;
+
     print('deleting file: $path');
-    final f = File(path);
-    await f.delete();
+    await databaseFactory.deleteDatabase(path);
   });
 
   test('throw error in batch', () async {
