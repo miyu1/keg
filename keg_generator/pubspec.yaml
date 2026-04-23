@@ -5,7 +5,7 @@ topics:
   - sql
   - database
 
-version: 0.1.4
+version: 0.1.5
 repository: https://github.com/miyu1/keg/tree/main/keg_generator
 
 resolution: workspace
@@ -21,7 +21,7 @@ dependencies:
   source_gen: ^4.2.0
   # path: ^1.9.0
 
-  keg_annotation: 0.1.4
+  keg_annotation: ^0.1.5
 
 dev_dependencies:
   lints: 

@@ -1,6 +1,6 @@
 name: keg_annotation
 description: annotation package for keg_generator.
-version: 0.1.4
+version: 0.1.5
 repository: https://github.com/miyu1/keg/tree/main/keg_annotation
 
 resolution: workspace
