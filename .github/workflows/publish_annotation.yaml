@@ -14,17 +14,17 @@ jobs:
   publish:
     permissions:
       id-token: write # Required for authentication using OIDC
-    runs-on: ubuntu-latest
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: ./keg_annotation
+    
+#jobs:
+#  publish:
+#    permissions:
+#      id-token: write # Required for authentication using OIDC
+#    runs-on: ubuntu-latest
 
-    steps:
-      - uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
-        with:
-          working-directory: ./keg_annotation
-
-      - uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
-        with:
-          working-directory: ./keg_generator
-
+#    steps:
       #- uses: actions/checkout@v4
 
       #- name: Setup Flutter SDK
