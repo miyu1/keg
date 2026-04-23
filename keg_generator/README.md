@@ -14,8 +14,7 @@ and the Flutter guide for
 
 *keg is small and handy barrel for beer*
 
-keg_generator is code generator package to simplify access to local SQLite file.
-
+keg_generator is code generator package to simplify access to local SQLite file.  
 Generated code uses [sqflite] to access SQLite file. 
 Tested on sqflite version 2.4.2.
 
