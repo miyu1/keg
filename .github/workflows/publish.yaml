@@ -3,7 +3,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Publish annotation to pub.dev
+name: Publishto pub.dev
 
 on:
   push:
@@ -11,13 +11,21 @@ on:
     - 'v[0-9]+.[0-9]+.[0-9]+' # tag pattern on pub.dev: 'v{{version}'
 
 jobs:
-  publish:
+  publish_annotation:
     permissions:
       id-token: write # Required for authentication using OIDC
     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
     with:
       working-directory: ./keg_annotation
-    
+
+  publish_generator:
+    needs: publish_annotation
+    permissions:
+      id-token: write # Required for authentication using OIDC
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: ./keg_generator
+
 #jobs:
 #  publish:
 #    permissions:
