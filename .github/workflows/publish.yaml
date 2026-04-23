@@ -17,18 +17,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+        with:
+          working-directory: ./keg_annotation
 
-      - name: Setup Flutter SDK
-        uses: flutter-actions/setup-flutter@v4
+      uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+        with:
+          working-directory: ./keg_generator
+
+      #- uses: actions/checkout@v4
+
+      #- name: Setup Flutter SDK
+      #  uses: flutter-actions/setup-flutter@v4
       # Note: This workflow uses the latest stable version of the Dart SDK.
       # You can specify other versions if desired, see documentation here:
       # https://github.com/dart-lang/setup-dart/blob/main/README.md
       #- uses: dart-lang/setup-dart@v1
       #- uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
 
-      - name: Install dependencies
-        run: dart pub get
+      #- name: Install dependencies
+      #  run: dart pub get
+
+      #- uses: subosito/flutter-action@v2
+      #  with:
+      #    channel: 'stable' # or: 'beta', 'dev' or 'master'        
 
       # Uncomment this step to verify the use of 'dart format' on each commit.
       # - name: Verify formatting
@@ -38,10 +50,10 @@ jobs:
       #- name: Analyze project source
       #  run: dart analyze
 
-      - name: Publish keg_annotation
-        run: dart pub publish --force
-        working-directory: ./keg_annotation
+      #- name: Publish keg_annotation
+      #  run: dart pub publish --force
+      #  working-directory: ./keg_annotation
 
-      - name: Publish keg_generator
-        run: dart pub publish --force
-        working-directory: ./keg_generator
+      #- name: Publish keg_generator
+      #  run: dart pub publish --force
+      #  working-directory: ./keg_generator
