@@ -10,7 +10,7 @@ For general information about developing packages, see the Dart guide for
 and the Flutter guide for
 [developing packages and plugins](https://flutter.dev/to/develop-packages). 
 -->
-![workflow](https://github.com/miyu1/keg/actions/workflows/test.yml/badge.svg)
+![workflow](https://github.com/miyu1/keg/actions/workflows/test.yaml/badge.svg)
 
 *keg is small and handy barrel for beer*
 
