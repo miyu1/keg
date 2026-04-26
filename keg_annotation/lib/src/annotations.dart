@@ -24,7 +24,7 @@ class Table {
 
 /// Annotation for ignore field of table class.
 /// If field is annotated,  field is not included in table schema.
-@Target({TargetKind.field})
+@Target({TargetKind.field, TargetKind.getter, TargetKind.setter})
 class Ignore {
   const Ignore();
 }

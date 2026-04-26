@@ -1504,7 +1504,17 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       return false;
     }
 
-    for (final annotation in field.metadata.annotations) {
+    final annotations = field.metadata.annotations;
+    if (field is FieldElement) {
+      // for field, also check getter and setter
+      if (field.getter != null) {
+        annotations.addAll(field.getter!.metadata.annotations);
+      }
+      if (field.setter != null) {
+        annotations.addAll(field.setter!.metadata.annotations);
+      }
+    }
+    for (final annotation in annotations) {
       final annoElem = annotation.element;
       if (annoElem == null) {
         continue;

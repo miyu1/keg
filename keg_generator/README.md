@@ -186,7 +186,7 @@ Packages you need is, [keg_annotation], keg_generator(this package),
 [build_runner]: https://pub.dev/packages/build_runner
 
 ```shell
-> flutter pub add keg_annotation dev:keg_generator, dev:build_runner
+> flutter pub add keg_annotation dev:keg_generator dev:build_runner
 > flutter pub add sqflite
 ```
 

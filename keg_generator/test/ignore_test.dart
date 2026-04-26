@@ -12,6 +12,16 @@ class User {
   @keg.ignore
   String sir;
 
+  @keg.ignore
+  List<String> get tags {
+    return ['tag1', 'tag2'];
+  }
+
+  @keg.ignore
+  set tags(List<String> value) {
+    // do nothing
+  }
+
   User(this.name, {this.sir = '', this.id = 0});
 
   Map<String, Object?> toSqlMap() => _$UserHelper.toSqlMap(this);

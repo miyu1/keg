@@ -10,7 +10,7 @@ void main() {
     });
 
     test('testGenerator function', () async {
-      await testGenerator('complex_test');
+      await testGenerator('ignore_test');
       //print('testGenerator output: ${output.join('\n')}');
     }, timeout: const Timeout(Duration(hours: 1)));
   }, timeout: const Timeout(Duration(hours: 1)));

@@ -6,3 +6,8 @@
 
 - Update documents
 
+## 0.1.6
+
+- Add annotation checks to getter/setter field
+- Update documents
+
