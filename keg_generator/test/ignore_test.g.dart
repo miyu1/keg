@@ -755,18 +755,25 @@ abstract class _$AppDatabase implements _$AppDatabaseExecutor {
 
 class _$UserHelper {
   final String tableName = '"user"';
-  final column = (id: '"id"', name: '"name"');
+  final column = (
+    id: '"id"',
+    name: '"name"',
+    key: '"key"',
+    tagStr: '"tag_str"',
+  );
   final columnTypes = {
     'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
     'name': 'TEXT NOT NULL DEFAULT \'\'',
+    'key': 'TEXT NOT NULL DEFAULT \'\'',
+    'tag_str': 'TEXT NOT NULL DEFAULT \'\'',
   };
-  final columnList = ['id', 'name'];
+  final columnList = ['id', 'name', 'key', 'tag_str'];
 
   _$AppDatabase appdb;
 
   _$UserHelper(this.appdb);
 
-  static final v1ColumnList = ['id', 'name'];
+  static final v1ColumnList = ['id', 'name', 'key', 'tag_str'];
   final columnListByVersion = {1: v1ColumnList};
 
   /// on create database table
@@ -841,6 +848,10 @@ class _$UserHelper {
 
     values['name'] = item.name;
 
+    values['key'] = item.key;
+
+    values['tag_str'] = item.tagStr;
+
     return values;
   }
 
@@ -864,6 +875,7 @@ class _$UserHelper {
   static User fromSqlMap(Map<String, Object?> map) {
     map = _unquoteMap(map);
     final keys = map.keys.toSet();
+    final params = <String, Object>{};
     if (!keys.contains('name')) {
       throw ArgumentError("Missing required key name in map");
     }
@@ -877,11 +889,26 @@ class _$UserHelper {
     final name = map['name'] as String;
     keys.remove('name');
 
+    if (keys.contains('key')) {
+      params['key'] = map['key'] as String;
+      keys.remove('key');
+    }
+
+    if (keys.contains('tag_str')) {
+      params['tagStr'] = map['tag_str'] as String;
+      keys.remove('tag_str');
+    }
+
     if (keys.isNotEmpty) {
       throw ArgumentError('Unkown map keys. $keys');
     }
 
     final $item = User(name, id: id);
+
+    // field key is final and not included in constructor
+    if (params['tagStr'] != null) {
+      $item.tagStr = params['tagStr'] as String;
+    }
 
     return $item;
   }

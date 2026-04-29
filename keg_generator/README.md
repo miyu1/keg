@@ -136,12 +136,12 @@ Full list of generated methods are described [here](#generated-codes-detail).
 - [Example](#example)
 - [Limitations](#limitations)
 - [Features](#features)
+  - [Fields in Table Classes and Ignore Annotation](#fields-in-table-classes-and-ignore-annotation)
   - [One to Many Relationship](#one-to-many-relationship)
   - [Many to Many Relationship](#many-to-many-relationship)
   - [Migration](#migration)
   - [Transaction and Batch](#transaction-and-batch)
   - [Index](#index)
-  - [Ignore Annotation](#ignore-annotation)
   - [Use with json_serializable and freezed annotation](#use-with-json_serializable-and-freezed-annotation)
 - [Generated Codes Detail](#generated-codes-detail)  
   - [_$AppDatabase](#_appdatabase)
@@ -234,6 +234,67 @@ On migration, only followings are allowed.
   - Add table class
 
 ## Features
+
+### Fields in Table Classes and Ignore Annotation
+In general, fields in table classes are stored in SQLite tables.  
+Exceptions are,
+- static fields
+- private fields
+- fields annotated by `Ignore`.
+
+**ignore_test.dart** 
+```dart
+class User {
+  int id;
+  String name;
+
+  final String key = 'abcde';
+
+  static String staticField = 'hijkl';
+
+  @ignore
+  String sir;
+
+  String tagStr = '';
+
+  List<String> _tagList = [];
+  ...
+}
+```
+
+In this example, stored fields are `id`, `name`, `key` and `tagStr`.
+
+If both setter and getter methods are defined, it is regarded as field
+and stored in SQLite table.
+
+```dart
+class User {
+  ...
+  @ignore
+  List<String> get tagList {
+    // final ret = tagStr.split(',');
+
+    // return ret.map((e) => e.trim()).toList();
+    return _tagList;
+  }
+
+  //@ignore
+  set tagList(List<String> value) {
+    // _tagStr = value.join(',');
+    _tagList = value;
+  }
+
+  String get getterOnly => 'Xyz';
+
+  set setterOnly(String value) {
+    // do nothing
+  }
+  ...
+}
+```
+In this example, tagList is stored to sqlite table if `ignore` annotation is not set.  
+`ignore` annotation is required on either getter or setter.  
+`getterOnly` and `setterOnly` is not stored, because no setter on `getterOnly`, and not getter on `setterOnly`.
 
 ### One to Many Relationship
 Following is sample code to define one to many relationship,
@@ -593,29 +654,6 @@ This sample makes 3 indexes, user_name_idx, user_updated_idx and user_contact_id
 You can create normal index by `@index` annotation,
 unique index by `@unique` annotation.  
 If descendant index required, use `@Index` annotation with descendant to true.
-
-### Ignore annotation
-If you want to add fields in table class that do not want to store in SQLite,
-use `@ignore` annotation.
-
-**ignore_test.dart**
-```dart
-@table
-class User {
-  int id;
-  String name;
-
-  @ignore
-  String sir;
-
-  User(this.name, {this.sir = '', this.id = 0});
-
-  Map<String, Object?> toSqlMap() => _$UserHelper.toSqlMap(this);
-  factory User.fromSqlMap(Map<String, Object?> map) =>
-      _$UserHelper.fromSqlMap(map);
-}
-```
-On this sample `id` and `name` is stored to SQLite but `sir` is not.
 
 ### Use with json_serializable and freezed annotation.
 It is able to use [json_serializable] and [freezed] annotation on table class if you want.

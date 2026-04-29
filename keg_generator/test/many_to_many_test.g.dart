@@ -1239,6 +1239,7 @@ class _$OrderHelper {
     if (params['itemList2'] != null) {
       $item.itemList2 = params['itemList2'] as List<Item>;
     }
+
     return $item;
   }
 
@@ -1998,6 +1999,7 @@ class _$ItemHelper {
     if (params['orderList'] != null) {
       $item.orderList = params['orderList'] as List<Order>;
     }
+
     return $item;
   }
 

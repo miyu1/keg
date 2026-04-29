@@ -41,7 +41,11 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
     className = element.displayName;
     tableName = toSnakeCase(className);
-    isFreezed = _annotatedWith(element, 'Freezed', package: 'package:freezed_annotation');
+    isFreezed = _annotatedWith(
+      element,
+      'Freezed',
+      package: 'package:freezed_annotation',
+    );
 
     await _getSchemaVersion(className, buildStep);
     if (schemaVersion == 0) {
@@ -466,6 +470,10 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
     for (final field in _fieldMap.values.where(
       (field) => field.constructType == .notIncluded,
     )) {
+      if (field.isFinal) {
+        lines.add('// field ${field.name} is final and not included in constructor');
+        continue;
+      }
       lines.add("if (params['${field.name}'] != null) {");
       var type = field.type.dartType;
       if (type.isEmpty) {
@@ -480,6 +488,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       lines.add('}');
     }
 
+    lines.add('');
     lines.add('return \$item;');
     lines.add('}'); // end of function
 
@@ -620,7 +629,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       ...registerCommon,
       'final id = await db.$registerCommand);',
       '  // set id if possible',
-      if (!idField.isFinal)  '  item.id = id;',
+      if (!idField.isFinal) '  item.id = id;',
       '',
       if (registerCommon2.isNotEmpty) 'final executor = db;',
       ...registerCommon2,
@@ -637,7 +646,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
       "        throw StateError('returned object \$object is not int.');",
       '     }',
       '     // set id if possible',
-      if (!idField.isFinal)  '      item.id = object;',
+      if (!idField.isFinal) '      item.id = object;',
       '    }',
       ...registerCommon2,
       '    return object;',
@@ -1109,6 +1118,15 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
         continue;
       }
 
+      // setter and getter fields are actually methods.
+      // should not included in sqlite table.
+      // About final field, setter is always null.
+      if (!field.isFinal) {
+        if (field.setter == null || field.getter == null) {
+          continue;
+        }
+      }
+
       if (_annotatedWith(field, 'Ignore')) {
         continue;
       }
@@ -1535,8 +1553,7 @@ class TableGenerator extends GeneratorForAnnotation<Table> {
 
       //      if (annoElem.displayName.toLowerCase() == name.toLowerCase() &&
       //          library.identifier.startsWith('package:keg_annotation')) {
-      if (typeName == name &&
-          library.identifier.startsWith(package)) {
+      if (typeName == name && library.identifier.startsWith(package)) {
         found = true;
         annotationObject = null;
         //        if (annoElem.displayName == 'BackLink' ||

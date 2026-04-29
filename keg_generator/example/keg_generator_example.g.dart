@@ -1397,6 +1397,7 @@ class _$UserHelper {
     if (params['orderList'] != null) {
       $item.orderList = params['orderList'] as List<Order>;
     }
+
     return $item;
   }
 
@@ -1798,6 +1799,7 @@ class _$OrderHelper {
     if (params['itemList'] != null) {
       $item.itemList = params['itemList'] as List<Item>;
     }
+
     return $item;
   }
 
@@ -2377,6 +2379,7 @@ class _$ItemHelper {
     if (params['orderList'] != null) {
       $item.orderList = params['orderList'] as List<Order>;
     }
+
     return $item;
   }
 

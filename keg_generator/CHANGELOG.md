@@ -10,3 +10,8 @@
 
 - Add annotation checks to getter/setter field
 - Update documents
+
+## 0.1.7
+
+- Change on how to handle getter/setter field
+- Update documents

@@ -1493,6 +1493,7 @@ class _$ItemHelper {
     if (params['subCategory'] != null) {
       $item.subCategory = params['subCategory'] as Category;
     }
+
     return $item;
   }
 

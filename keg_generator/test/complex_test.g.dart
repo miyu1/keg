@@ -1920,6 +1920,7 @@ class _$UserHelper {
     if (params['orderList'] != null) {
       $item.orderList = params['orderList'] as List<Order>;
     }
+
     return $item;
   }
 
@@ -2329,6 +2330,7 @@ class _$OrderHelper {
     if (params['cancelledItemList'] != null) {
       $item.cancelledItemList = params['cancelledItemList'] as List<Item>;
     }
+
     return $item;
   }
 
@@ -3125,6 +3127,7 @@ class _$CategoryHelper {
     if (params['itemList'] != null) {
       $item.itemList = params['itemList'] as List<Item>;
     }
+
     return $item;
   }
 
@@ -3541,6 +3544,7 @@ class _$ColorHelper {
     if (params['itemList'] != null) {
       $item.itemList = params['itemList'] as List<Item>;
     }
+
     return $item;
   }
 
@@ -4025,6 +4029,7 @@ class _$ItemHelper {
     if (params['orderList'] != null) {
       $item.orderList = params['orderList'] as List<Order>;
     }
+
     return $item;
   }
 

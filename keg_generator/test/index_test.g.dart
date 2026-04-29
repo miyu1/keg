@@ -955,6 +955,7 @@ class _$UserHelper {
     if (params['updated'] != null) {
       $item.updated = params['updated'] as DateTime;
     }
+
     return $item;
   }
 

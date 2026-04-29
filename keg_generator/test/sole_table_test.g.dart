@@ -1495,6 +1495,7 @@ class _$ItemInfoHelper {
     if (params['created'] != null) {
       $item.created = params['created'] as DateTime;
     }
+
     return $item;
   }
 
